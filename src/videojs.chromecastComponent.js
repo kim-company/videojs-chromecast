@@ -1,16 +1,5 @@
-/**
- * Button pour envoyer le flux a ChromeCast
- *
- * @param {vjs.Player|Object} player
- * @param {Object=} options
- * @constructor
- */
-var cast = cast || {};
-
 vjs.Player.prototype.chromeCastComponent = {};
-
 vjs.ChromeCastComponent = vjs.Button.extend({
-    /** @constructor */
     init: function(player, options) {
         this.settings = options;
         vjs.Button.call(this, player, options);
@@ -25,7 +14,6 @@ vjs.ChromeCastComponent = vjs.Button.extend({
         this.initializeApi();
 
     }
-
 });
 
 vjs.ChromeCastComponent.prototype.kind_ = 'chromecast';

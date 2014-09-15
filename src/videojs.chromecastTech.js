@@ -1,5 +1,4 @@
 vjs.ChromecastTech = vjs.MediaTechController.extend({
-    /** @constructor */
     init: function(player, options, ready) {
 
         this.features['volumeControl'] = true;
@@ -9,9 +8,6 @@ vjs.ChromecastTech = vjs.MediaTechController.extend({
         this.features['timeupdateEvents'] = true;
 
         vjs.MediaTechController.call(this, player, options, ready);
-        //this.setupTriggers();
-
-        var source = options['source'];
 
         vjs.log("ChromecastTech initialized...");
 
@@ -22,28 +18,8 @@ vjs.ChromecastTech = vjs.MediaTechController.extend({
         });
         vjs.insertFirst(this.el_, this.player_.el());
         this.triggerReady();
-
-
-        // If the element source is already set, we may have missed the loadstart event, and want to trigger it.
-        // We don't want to set the source again and interrupt playback.
-        /*if (source) {
-            player.trigger('loadstart');
-        }*/
-
-        // Determine if native controls should be used
-        // Our goal should be to get the custom controls on mobile solid everywhere
-        // so we can remove this all together. Right now this will block custom
-        // controls on touch enabled laptops like the Chrome Pixel
-        /*if (vjs.TOUCH_ENABLED && player.options()['nativeControlsForTouch'] !== false) {
-	  this.useNativeControls();
-	}*/
-
-        //this.triggerReady();
     }
 });
-
-vjs.ChromecastTech.apiSession = {};
-vjs.ChromecastTech.apiMedia = {};
 
 vjs.ChromecastTech.isSupported = function() {
     vjs.log("isSupported");
