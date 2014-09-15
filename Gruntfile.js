@@ -23,6 +23,12 @@ module.exports = function(grunt) {
     },
 
     uglify: {
+      options: {
+        compress: {
+          drop_console: true,
+          pure_funcs: ["vjs.log"]
+        }
+      },
       dist: {
         src: 'dist/videojs.chromecast.js',
         dest: 'dist/videojs.chromecast.min.js'
