@@ -87,6 +87,7 @@ vjs.ChromeCastComponent.prototype.initializeApi = function() {
     var apiConfig = new chrome.cast.ApiConfig(sessionRequest,
         this.sessionJoinedListener.bind(this),
         this.receiverListener.bind(this));
+
     chrome.cast.initialize(apiConfig, this.onInitSuccess.bind(this), this.onInitError.bind(this));
 };
 
