@@ -9,6 +9,29 @@ class vjs.ChromeCastComponent extends vjs.Button
     @el_.setAttribute "role", "button"
 
     @initializeApi()
+    return
+
+  initializeApi: ->
+    # Check if the browser is Google Chrome
+    return unless vjs.IS_CHROME
+
+    # If the Cast APIs arent available yet, retry in 1000ms
+    if not chrome.cast or not chrome.cast.isAvailable
+      vjs.log "Cast APIs not Available. Retrying..."
+      setTimeout @initializeApi.bind(@), 1000
+      return
+
+    # Initialize the SessionRequest with the given App ID
+    if @settings.appId
+      sessionRequest = new chrome.cast.SessionRequest(@settings.appId)
+    else
+      sessionRequest = new chrome.cast.SessionRequest(chrome.cast.media.DEFAULT_MEDIA_RECEIVER_APP_ID)
+
+    # Initialize the Api Config
+    apiConfig = new chrome.cast.ApiConfig(sessionRequest, @sessionJoinedListener.bind(this), @receiverListener.bind(this))
+
+    # Initialize Chromecast
+    chrome.cast.initialize(apiConfig, @onInitSuccess.bind(this), @onInitError.bind(this))
 
 vjs.ChromeCastComponent::kind_ = "chromecast"
 vjs.ChromeCastComponent::buttonText = "Chromecast"
@@ -45,23 +68,6 @@ vjs.ChromeCastComponent::sessionUpdateListener = (session) ->
 vjs.ChromeCastComponent::receiverListener = (availability) ->
   vjs.log "receivers available: " + ((if ("available" is availability) then "Yes" else "No"))
   @show()  if "available" is availability
-  return
-
-vjs.ChromeCastComponent::initializeApi = ->
-  vjs.log "ChromeCastComponent initializeApi"
-  return  unless vjs.IS_CHROME
-  if not chrome.cast or not chrome.cast.isAvailable
-    vjs.log "Cast APIs not Available. Retrying..."
-    setTimeout @initializeApi.bind(this), 1000
-    return
-  console.log @settings.appId
-  sessionRequest = undefined
-  if @settings.appId
-    sessionRequest = new chrome.cast.SessionRequest(@settings.appId)
-  else
-    sessionRequest = new chrome.cast.SessionRequest(chrome.cast.media.DEFAULT_MEDIA_RECEIVER_APP_ID)
-  apiConfig = new chrome.cast.ApiConfig(sessionRequest, @sessionJoinedListener.bind(this), @receiverListener.bind(this))
-  chrome.cast.initialize apiConfig, @onInitSuccess.bind(this), @onInitError.bind(this)
   return
 
 vjs.ChromeCastComponent::doLaunch = ->

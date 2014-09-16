@@ -1,6 +1,6 @@
 module.exports = ->
 
-  # Initialize the configuration.
+  # Initialize the configuration
   @initConfig
 
     pkg: @file.readJSON "package.json"
@@ -64,7 +64,7 @@ module.exports = ->
             "dist/videojs.chromecast.css"
           ]
 
-    # Load external Grunt task plugins.
+    # Load external Grunt task plugins
     @loadNpmTasks "grunt-contrib-clean"
     @loadNpmTasks "grunt-contrib-uglify"
     @loadNpmTasks "grunt-contrib-concat"
@@ -73,5 +73,5 @@ module.exports = ->
     @loadNpmTasks "grunt-contrib-coffee"
     @loadNpmTasks "grunt-banner"
 
-    # Default task.
+    # Default task
     @registerTask "default", ["clean:start", "coffee", "concat", "uglify", "copy", "cssmin", "usebanner", "clean:end"]
