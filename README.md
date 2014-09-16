@@ -13,7 +13,7 @@ Displays a Chromecast button in the control bar.
 
 If you are not able to configure the player, check out the [demo directory](https://github.com/kim-company/videojs-chromecast/tree/master/demo).
 
-### Configuration example
+#### Configuration example
 ```javascript
 videojs("my_player_id", {
   "plugins": {
