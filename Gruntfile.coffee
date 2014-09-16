@@ -13,24 +13,18 @@ module.exports = ->
       """
 
     clean:
-      start:
-        src: "dist/*"
-      end:
-        src: "cache"
+      src: "dist/*"
 
     coffee:
       compileJoined:
         options:
           join: true
         files:
-          "cache/videojs.chromecast.js": ["src/videojs.chromecast.coffee", "src/videojs.chromecastComponent.coffee"]
-
-    concat:
-      options:
-        separator: ""
-      dist:
-        src: ["cache/videojs.chromecast.js", "cache/videojs.chromecastComponent.js", "src/videojs.chromecastTech.js"]
-        dest: "dist/videojs.chromecast.js"
+          "dist/videojs.chromecast.js": [
+            "src/videojs.chromecast.coffee"
+            "src/videojs.chromecastComponent.coffee"
+            "src/videojs.chromecastTech.coffee"
+          ]
 
     uglify:
       options:
@@ -52,26 +46,24 @@ module.exports = ->
         dest: "dist/videojs.chromecast.min.css"
 
     usebanner:
-      taskName:
-        options:
-          position: "top"
-          banner: "<%= banner %>"
-        files:
-          src: [
-            "dist/videojs.chromecast.js"
-            "dist/videojs.chromecast.min.js"
-            "dist/videojs.chromecast.min.css"
-            "dist/videojs.chromecast.css"
-          ]
+      options:
+        position: "top"
+        banner: "<%= banner %>"
+      files:
+        src: [
+          "dist/videojs.chromecast.js"
+          "dist/videojs.chromecast.min.js"
+          "dist/videojs.chromecast.min.css"
+          "dist/videojs.chromecast.css"
+        ]
 
     # Load external Grunt task plugins
     @loadNpmTasks "grunt-contrib-clean"
     @loadNpmTasks "grunt-contrib-uglify"
-    @loadNpmTasks "grunt-contrib-concat"
     @loadNpmTasks "grunt-contrib-cssmin"
     @loadNpmTasks "grunt-contrib-copy"
     @loadNpmTasks "grunt-contrib-coffee"
     @loadNpmTasks "grunt-banner"
 
     # Default task
-    @registerTask "default", ["clean:start", "coffee", "concat", "uglify", "copy", "cssmin", "usebanner", "clean:end"]
+    @registerTask "default", ["clean", "coffee", "uglify", "copy", "cssmin", "usebanner"]
