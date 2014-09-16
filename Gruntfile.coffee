@@ -73,5 +73,4 @@ module.exports = ->
     @loadNpmTasks "grunt-banner"
 
     # Default task.
-    @registerTask "default", ["clean:start", "coffee", "concat", "uglify",
-      "copy", "cssmin", "usebanner", "clean:end"]
+    @registerTask "default", ["clean:start", "coffee", "concat", "uglify", "copy", "cssmin", "usebanner", "clean:end"]
