@@ -1,4 +1,21 @@
 class vjs.ChromeCastComponent extends vjs.Button
+  kind_: "chromecast"
+  buttonText: "Chromecast"
+  className: "vjs-chromecast-button "
+
+  apiInitialized: false
+  apiSession: null
+  apiMedia: null
+
+  casting: false
+  paused: true
+  muted: false
+  currentVolume: 1
+  currentMediaTime: 0
+
+  timer: null
+  timerStep: 1000
+
   constructor: (player, @settings) ->
     vjs.Button.call this, player, settings
 
@@ -17,9 +34,11 @@ class vjs.ChromeCastComponent extends vjs.Button
 
     # If the Cast APIs arent available yet, retry in 1000ms
     if not chrome.cast or not chrome.cast.isAvailable
-      vjs.log "Cast APIs not Available. Retrying..."
+      vjs.log "Cast APIs not available. Retrying..."
       setTimeout @initializeApi.bind(@), 1000
       return
+
+    vjs.log "Cast APIs are available"
 
     # Initialize the SessionRequest with the given App ID and the apiConfig.
     sessionRequest = if @settings.appId
@@ -29,7 +48,7 @@ class vjs.ChromeCastComponent extends vjs.Button
     apiConfig = new chrome.cast.ApiConfig(sessionRequest, @sessionJoinedListener, @receiverListener.bind(this))
 
     # Initialize Chromecast
-    chrome.cast.initialize(apiConfig, @onInitSuccess.bind(this), @onInitError)
+    chrome.cast.initialize(apiConfig, @onInitSuccess.bind(this), @castError)
 
   sessionJoinedListener: (session) ->
     vjs.log "Joined #{session.sessionId}"
@@ -40,241 +59,145 @@ class vjs.ChromeCastComponent extends vjs.Button
   onInitSuccess: ->
     @apiInitialized = true
 
-  onInitError: (castError) ->
-    vjs.log "Initialize Error: #{JSON.stringify(castError)}"
+  castError: (castError) ->
+    vjs.log "Cast Error: #{JSON.stringify(castError)}"
 
-vjs.ChromeCastComponent::kind_ = "chromecast"
-vjs.ChromeCastComponent::buttonText = "Chromecast"
-vjs.ChromeCastComponent::className = "vjs-chromecast-button "
-vjs.ChromeCastComponent::chromeCastBanner = {}
-vjs.ChromeCastComponent::apiMedia = null
-vjs.ChromeCastComponent::apiSession = null
-vjs.ChromeCastComponent::apiInitialized = false
-vjs.ChromeCastComponent::casting = false
-vjs.ChromeCastComponent::progressFlag = 1
-vjs.ChromeCastComponent::timer = null
-vjs.ChromeCastComponent::timerStep = 1000
-vjs.ChromeCastComponent::currentMediaTime = 0
-vjs.ChromeCastComponent::paused = true
-vjs.ChromeCastComponent::seeking = false
-vjs.ChromeCastComponent::currentVolume = 1
-vjs.ChromeCastComponent::muted = false
-#vjs.ChromeCastComponent.boundEvents = {}
+  doLaunch: ->
+    vjs.log "Cast video: #{@player_.currentSrc()}"
+    if @apiInitialized
+      chrome.cast.requestSession @onSessionSuccess.bind(this), @castError
+    else
+      vjs.log "Session not initialized"
 
-vjs.ChromeCastComponent::doLaunch = ->
-  vjs.log "Cast video : " + @player_.currentSrc()
-  if @apiInitialized
+  onSessionSuccess: (session) ->
+    vjs.log "Session initialized: #{session.sessionId}"
 
-    # Success
+    @apiSession = session
+    @addClass "connected"
 
-    # Error
-    chrome.cast.requestSession @onSessionSuccess.bind(this), (castError) ->
-      vjs.log "session_established ERROR: " + JSON.stringify(castError)
-      return
+    mediaInfo = new chrome.cast.media.MediaInfo(@player_.currentSrc(), "video/mp4")
 
-  else
-    vjs.log "session_established NOT INITIALIZED"
-  return
+    loadRequest = new chrome.cast.media.LoadRequest(mediaInfo)
+    loadRequest.autoplay = true
+    loadRequest.currentTime = @player_.currentTime()
 
-vjs.ChromeCastComponent::onSessionSuccess = (session) ->
-  @apiSession = session
-  vjs.log "session_established YES - " + session.sessionId
-  @addClass "connected"
+    @apiSession.loadMedia loadRequest, @onMediaDiscovered.bind(this), @castError
 
-  #this.player_.pause();
-  #    this.player_.chromeCastComponent.disableNativeControls();
-  mediaInfo = new chrome.cast.media.MediaInfo(@player_.currentSrc(), "video/mp4")
-
-  #vjs.log("## MediaInfo('" + url + "', '" + mime + "')");
-  loadRequest = new chrome.cast.media.LoadRequest(mediaInfo)
-  loadRequest.autoplay = true
-  vjs.log "Sending Load Request: "
-  vjs.log loadRequest
-  loadRequest.currentTime = @player_.currentTime()
-  @apiSession.loadMedia loadRequest, @onMediaDiscovered.bind(this), @onMediaError.bind(this)
-  return
-
-vjs.ChromeCastComponent::onMediaDiscovered = (media) ->
-
-  # chrome.cast.media.Media object
-  @apiMedia = media
-  @apiMedia.addUpdateListener @onMediaStatusUpdate.bind(this)
-  vjs.log "Got media object"
-  @startProgressTimer @incrementMediaTime.bind(this)
-  vjs.log "play!!!!"
-  @paused = false
-  @player_.loadTech "ChromecastTech", {}
-  @player_.userActive true
-  @casting = true
-  return
-
-vjs.ChromeCastComponent::onMediaError = (castError) ->
-  vjs.log "Media Error: " + JSON.stringify(castError)
-  return
-
-vjs.ChromeCastComponent::onMediaStatusUpdate = (e) ->
-  return  unless @apiMedia
-
-  #vjs.log(parseInt(100 * this.apiMedia.currentTime / this.apiMedia.media.duration) + "%");
-  vjs.log @apiMedia.currentTime + "/" + @apiMedia.media.duration  if @progressFlag
-  vjs.ChromeCastComponent::currentMediaTime = @apiMedia.currentTime
-  vjs.log @apiMedia.playerState
-  if @apiMedia.playerState is "IDLE"
-    @currentMediaTime = 0
-    @trigger "timeupdate"
-    @onStopAppSuccess()
-  return
-
-vjs.ChromeCastComponent::startProgressTimer = (callback) ->
-  if @timer
-    clearInterval @timer
-    @timer = null
-  vjs.log "starting timer..."
-
-  # start progress timer
-  @timer = setInterval(callback.bind(this), @timerStep)
-  return
-
-vjs.ChromeCastComponent::duration = ->
-  return 0  unless @apiMedia
-  @apiMedia.media.duration
-
-
-###*
-play media
-###
-vjs.ChromeCastComponent::play = ->
-  return  unless @apiMedia
-  if @paused
-    @apiMedia.play null, @mediaCommandSuccessCallback.bind(this, "playing started for " + @apiMedia.sessionId), @onError.bind(this)
+  onMediaDiscovered: (media) ->
+    @apiMedia = media
     @apiMedia.addUpdateListener @onMediaStatusUpdate.bind(this)
 
-    #this.player_.controlBar.playToggle.onPlay();
-    #this.player_.onPlay();
+    @startProgressTimer @incrementMediaTime.bind(this)
+
     @paused = false
-  return
+    @player_.loadTech "ChromecastTech", {}
+    @player_.userActive true
+    @casting = true
 
-vjs.ChromeCastComponent::pause = ->
-  return  unless @apiMedia
-  unless @paused
-    @apiMedia.pause null, @mediaCommandSuccessCallback.bind(this, "paused " + @apiMedia.sessionId), @onError.bind(this)
+  onMediaStatusUpdate: (event) ->
+    return unless @apiMedia
 
-    #this.player_.controlBar.playToggle.onPause();
-    #        this.player_.onPause();
-    @paused = true
-  return
+    @currentMediaTime = @apiMedia.currentTime
+    if @apiMedia.playerState is "IDLE"
+      @currentMediaTime = 0
+      @trigger "timeupdate"
+      @onStopAppSuccess()
 
+  startProgressTimer: (callback) ->
+    if @timer
+      clearInterval @timer
+      @timer = null
 
-###*
-seek media position
-@param {Number} pos A number to indicate percent
-###
-vjs.ChromeCastComponent::seekMedia = (pos) ->
+    @timer = setInterval(callback.bind(this), @timerStep)
 
-  #console.log('Seeking ' + currentMediaSession.sessionId + ':' +
-  #        currentMediaSession.mediaSessionId + ' to ' + pos + "%");
+  ###
+  MEDIA PLAYER EVENTS
+  ###
 
-  #progressFlag = 0;
-  request = new chrome.cast.media.SeekRequest()
-  request.currentTime = pos
-  @apiMedia.seek request, @onSeekSuccess.bind(this, pos), @onError
-  return
+  play: ->
+    return unless @apiMedia
+    if @paused
+      @apiMedia.play null, @mediaCommandSuccessCallback.bind(this, "Playing: " + @apiMedia.sessionId), @onError
+      @apiMedia.addUpdateListener @onMediaStatusUpdate.bind(this)
 
-vjs.ChromeCastComponent::onSeekSuccess = (pos) ->
-  @currentMediaTime = pos
-  return
+      @paused = false
 
+  pause: ->
+    return unless @apiMedia
 
-#appendMessage(info);
-#setTimeout(function() {
-#        progressFlag = 1
-#    }, 1500);
-vjs.ChromeCastComponent::setMediaVolume = (level, mute) ->
-  return  unless @apiMedia
-  volume = new chrome.cast.Volume()
-  volume.level = level
-  @currentVolume = volume.level
-  volume.muted = mute
-  @muted = mute
-  request = new chrome.cast.media.VolumeRequest()
-  request.volume = volume
-  @apiMedia.setVolume request, @mediaCommandSuccessCallback.bind(this, "media set-volume done"), @onError
-  @player_.trigger "volumechange"
-  return
+    unless @paused
+      @apiMedia.pause null, @mediaCommandSuccessCallback.bind(this, "Paused: " + @apiMedia.sessionId), @onError
+      @paused = true
 
-vjs.ChromeCastComponent::incrementMediaTime = ->
-  if @apiMedia.playerState is chrome.cast.media.PlayerState.PLAYING
+  seekMedia: (position) ->
+    request = new chrome.cast.media.SeekRequest()
+    request.currentTime = position
+
+    @apiMedia.seek request, @onSeekSuccess.bind(this, position), @onError
+
+  onSeekSuccess: (position) ->
+    @currentMediaTime = position
+
+  setMediaVolume: (level, mute) ->
+    return unless @apiMedia
+
+    volume = new chrome.cast.Volume()
+    volume.level = level
+    volume.muted = mute
+
+    @currentVolume = volume.level
+    @muted = mute
+
+    request = new chrome.cast.media.VolumeRequest()
+    request.volume = volume
+
+    @apiMedia.setVolume request, @mediaCommandSuccessCallback.bind(this, "Volume changed"), @onError
+    @player_.trigger "volumechange"
+
+  incrementMediaTime: ->
+    return unless @apiMedia.playerState is chrome.cast.media.PlayerState.PLAYING
+
     if @currentMediaTime < @apiMedia.media.duration
       @currentMediaTime += 1
       @trigger "timeupdate"
-
-    #this.updateProgressBarByTimer();
     else
       @currentMediaTime = 0
       clearInterval @timer
-  return
 
-vjs.ChromeCastComponent::updateProgressBarByTimer = ->
+  mediaCommandSuccessCallback: (information, event) ->
+    vjs.log information
 
-  #vjs.log(this.currentMediaTime);
-  bufferedPercent = parseInt(100 * @currentMediaTime / @apiMedia.media.duration)
+  onError: ->
+    vjs.log "error"
 
-  #vjs.log(bufferedPercent + "%");
-  @player_.controlBar.progressControl.seekBar.bar.el_.style.width = vjs.round(bufferedPercent, 2) + "%"  if @player_.controlBar.progressControl.seekBar.bar.el_.style
-  @player_.controlBar.progressControl.seekBar.seekHandle.el_.style.left = vjs.round(bufferedPercent, 2) + "%"  if @player_.controlBar.progressControl.seekBar.seekHandle.el_.style
-  @player_.controlBar.currentTimeDisplay.content.innerHTML = "<span class=\"vjs-control-text\">Current Time </span>" + vjs.formatTime(@currentMediaTime)
-  return
+  # Stops the casting on the Chromecast
+  stopCasting: ->
+    @apiSession.stop @onStopAppSuccess.bind(this), @onError
 
+  # Callback when the app has been successfully stopped
+  onStopAppSuccess: ->
+    clearInterval @timer
+    @casting = false
+    @removeClass "connected"
+    @player_.src @player_.options_["sources"]
 
-###*
-Callback function for media command success
-###
-vjs.ChromeCastComponent::mediaCommandSuccessCallback = (info, e) ->
-  vjs.log info
-  return
+    vjs.insertFirst @player_.tech.el_, @player_.el()
 
-vjs.ChromeCastComponent::onError = ->
-  vjs.log "error"
-  return
+    if @apiMedia.playerState is "IDLE"
+      @player_.currentTime 0
+      @player_.onPause()
+    else
+      @player_.currentTime @currentMediaTime
+      @player_.play() unless @paused
 
+    @apiMedia = null
 
-###*
-Stops the running receiver application associated with the session.
-###
-vjs.ChromeCastComponent::stopCasting = ->
-  @apiSession.stop @onStopAppSuccess.bind(this), @onError.bind(this)
-  return
+  buildCSSClass: ->
+    @className + vjs.Button::buildCSSClass.call(this)
 
+  createEl: (type, props) ->
+    vjs.Button::createEl.call(this, "div")
 
-###*
-Callback function for stop app success
-###
-vjs.ChromeCastComponent::onStopAppSuccess = ->
-  clearInterval @timer
-  @casting = false
-  @removeClass "connected"
-  @player_.src @player_.options_["sources"]
-  vjs.insertFirst @player_.tech.el_, @player_.el()
-  if @apiMedia.playerState is "IDLE"
-    @player_.currentTime 0
-    @player_.onPause()
-  else
-    @player_.currentTime @currentMediaTime
-    @player_.play()  unless @paused
-  @apiMedia = null
-  return
-
-vjs.ChromeCastComponent::buildCSSClass = ->
-  @className + vjs.Button::buildCSSClass.call(this)
-
-vjs.ChromeCastComponent::createEl = (type, props) ->
-  el = vjs.Button::createEl.call(this, "div")
-  el
-
-vjs.ChromeCastComponent::onClick = ->
-  vjs.Button::onClick.call this
-  if @casting
-    @stopCasting()
-  else
-    @doLaunch()
-  return
+  onClick: ->
+    vjs.Button::onClick.call this
+    if @casting then @stopCasting() else @doLaunch()
