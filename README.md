@@ -7,7 +7,7 @@ Displays a Chromecast button in the control bar.
 **NOTE:** The Chromecast Plugin won't work if you open the index.html in the browser. It must run on a webserver.
 
 1. Add `data-cast-api-enabled="true"` in your `<html>` Tag.
-2. Include `videojs.chromecast.css` and `videojs.chromecast.js` on your Webpage.
+2. Include `videojs.chromecast.css` and `videojs.chromecast.js` in the `<head>`.
 3. Initialize the VideoJS Player with the Chromecast Plugin like the [configuration example](#configuration-example).
 4. When a Chromecast is available in your network, you should see the cast button in the controlbar.
 
