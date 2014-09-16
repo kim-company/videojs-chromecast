@@ -9,7 +9,23 @@ module.exports = function(grunt) {
       ' Licensed <%= pkg.license %> */\n',
 
     clean: {
-      files: ['dist']
+      start: {
+        src: ['dist/*']
+      },
+      end: {
+        src: ['cache']
+      }
+    },
+
+    coffee: {
+      compileJoined: {
+        options: {
+          join: true
+        },
+        files: {
+          'cache/videojs.chromecast.js': ['src/videojs.chromecast.coffee']
+        }
+      }
     },
 
     concat: {
@@ -17,7 +33,7 @@ module.exports = function(grunt) {
         separator: ''
       },
       dist: {
-        src: ['src/videojs.pluginBase.js','src/videojs.chromecast.js', 'src/videojs.chromecastComponent.js', 'src/videojs.chromecastTech.js'],
+        src: ['src/videojs.pluginBase.js','cache/videojs.chromecast.js', 'src/videojs.chromecastComponent.js', 'src/videojs.chromecastTech.js'],
         dest: 'dist/videojs.chromecast.js'
       }
     },
@@ -72,7 +88,8 @@ module.exports = function(grunt) {
   grunt.loadNpmTasks('grunt-contrib-concat');
   grunt.loadNpmTasks('grunt-contrib-cssmin');
   grunt.loadNpmTasks('grunt-contrib-copy');
+  grunt.loadNpmTasks('grunt-contrib-coffee');
   grunt.loadNpmTasks('grunt-banner');
 
-  grunt.registerTask('default', ['clean', 'concat', 'uglify', 'copy', 'cssmin', 'usebanner']);
+  grunt.registerTask('default', ['clean:start', 'coffee', 'concat', 'uglify', 'copy', 'cssmin', 'usebanner', 'clean:end']);
 };
