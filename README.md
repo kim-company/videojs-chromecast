@@ -28,7 +28,6 @@ videojs("my_player_id", {
 });
 ```
 
-
 ## Contributing
 Ensure that you have installed [Node.js](http://www.nodejs.org) and [npm](http://www.npmjs.org/)
 
