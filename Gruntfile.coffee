@@ -9,6 +9,7 @@ module.exports = ->
       /*! <%= pkg.title || pkg.name %> - v<%= pkg.version %> - <%= grunt.template.today('yyyy-mm-dd') %>
       * <%= pkg.homepage %>
       * Copyright (c) <%= grunt.template.today('yyyy') %> <%= pkg.author.name %>; Licensed <%= pkg.license %> */
+
       """
 
     clean:
@@ -28,7 +29,7 @@ module.exports = ->
       options:
         separator: ""
       dist:
-        src: ["src/videojs.pluginBase.js", "cache/videojs.chromecast.js", "src/videojs.chromecastComponent.js", "src/videojs.chromecastTech.js"]
+        src: ["cache/videojs.chromecast.js", "src/videojs.chromecastComponent.js", "src/videojs.chromecastTech.js"]
         dest: "dist/videojs.chromecast.js"
 
     uglify:
