@@ -6,7 +6,7 @@ Displays a Chromecast button in the control bar.
 ## Contributing
 Ensure that you have installed [Node.js](http://www.nodejs.org) and [npm](http://www.npmjs.org/)
 
-Test that Grunt's CLI is installed by running grunt --version. If the command isn't found, run npm install -g grunt-cli. For more information about installing Grunt, see the [getting started guide](http://gruntjs.com/getting-started).
+Test that Grunt's CLI is installed by running `grunt --version`. If the command isn't found, run `npm install -g grunt-cli`. For more information about installing Grunt, see the [getting started guide](http://gruntjs.com/getting-started).
 
 1. Fork and clone the repository.
 2. Run `npm install` to install the dependencies.
