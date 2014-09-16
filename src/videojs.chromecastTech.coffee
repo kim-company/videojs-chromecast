@@ -3,7 +3,7 @@ class vjs.ChromecastTech extends vjs.MediaTechController
   loop: false
 
   @isSupported = ->
-    @player_.chromeCastComponent.apiInitialized
+    @player_.chromecastComponent.apiInitialized
 
   @canPlaySource = (source) ->
     source.type is "video/mp4"
@@ -35,21 +35,21 @@ class vjs.ChromecastTech extends vjs.MediaTechController
   ###
 
   play: ->
-    @player_.chromeCastComponent.play()
+    @player_.chromecastComponent.play()
     @player_.onPlay()
 
   pause: ->
-    @player_.chromeCastComponent.pause()
+    @player_.chromecastComponent.pause()
     @player_.onPause()
 
   paused: ->
-    @player_.chromeCastComponent.paused
+    @player_.chromecastComponent.paused
 
   currentTime: ->
-    @player_.chromeCastComponent.currentMediaTime
+    @player_.chromecastComponent.currentMediaTime
 
   setCurrentTime: (seconds) ->
-    @player_.chromeCastComponent.seekMedia seconds
+    @player_.chromecastComponent.seekMedia seconds
 
   duration: ->
     0
@@ -58,16 +58,16 @@ class vjs.ChromecastTech extends vjs.MediaTechController
     length: 0
 
   volume: ->
-    @player_.chromeCastComponent.currentVolume
+    @player_.chromecastComponent.currentVolume
 
   setVolume: (volume) ->
-    @player_.chromeCastComponent.setMediaVolume volume, false
+    @player_.chromecastComponent.setMediaVolume volume, false
 
   muted: ->
-    @player_.chromeCastComponent.muted
+    @player_.chromecastComponent.muted
 
   setMuted: (muted) ->
-    @player_.chromeCastComponent.setMediaVolume @player_.chromeCastComponent.currentVolume, muted
+    @player_.chromecastComponent.setMediaVolume @player_.chromecastComponent.currentVolume, muted
 
   supportsFullScreen: ->
     false

@@ -1,4 +1,4 @@
-class vjs.ChromeCastComponent extends vjs.Button
+class vjs.ChromecastComponent extends vjs.Button
   kind_: "chromecast"
   buttonText: "Chromecast"
   className: "vjs-chromecast-button "
