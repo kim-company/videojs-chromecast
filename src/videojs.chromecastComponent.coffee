@@ -21,17 +21,27 @@ class vjs.ChromeCastComponent extends vjs.Button
       setTimeout @initializeApi.bind(@), 1000
       return
 
-    # Initialize the SessionRequest with the given App ID
-    if @settings.appId
-      sessionRequest = new chrome.cast.SessionRequest(@settings.appId)
+    # Initialize the SessionRequest with the given App ID and the apiConfig.
+    sessionRequest = if @settings.appId
+      new chrome.cast.SessionRequest(@settings.appId)
     else
-      sessionRequest = new chrome.cast.SessionRequest(chrome.cast.media.DEFAULT_MEDIA_RECEIVER_APP_ID)
-
-    # Initialize the Api Config
-    apiConfig = new chrome.cast.ApiConfig(sessionRequest, @sessionJoinedListener.bind(this), @receiverListener.bind(this))
+      new chrome.cast.SessionRequest(chrome.cast.media.DEFAULT_MEDIA_RECEIVER_APP_ID)
+    apiConfig = new chrome.cast.ApiConfig(sessionRequest, @sessionJoinedListener, @receiverListener.bind(this))
 
     # Initialize Chromecast
-    chrome.cast.initialize(apiConfig, @onInitSuccess.bind(this), @onInitError.bind(this))
+    chrome.cast.initialize(apiConfig, @onInitSuccess.bind(this), @onInitError)
+
+  sessionJoinedListener: (session) ->
+    vjs.log "Joined #{session.sessionId}"
+
+  receiverListener: (availability) ->
+    @show() if availability is "available"
+
+  onInitSuccess: ->
+    @apiInitialized = true
+
+  onInitError: (castError) ->
+    vjs.log "Initialize Error: #{JSON.stringify(castError)}"
 
 vjs.ChromeCastComponent::kind_ = "chromecast"
 vjs.ChromeCastComponent::buttonText = "Chromecast"
@@ -49,26 +59,7 @@ vjs.ChromeCastComponent::paused = true
 vjs.ChromeCastComponent::seeking = false
 vjs.ChromeCastComponent::currentVolume = 1
 vjs.ChromeCastComponent::muted = false
-vjs.ChromeCastComponent.boundEvents = {}
-vjs.ChromeCastComponent::onInitSuccess = ->
-  vjs.log "api_status :Initialized"
-  @apiInitialized = true
-  return
-
-vjs.ChromeCastComponent::onInitError = (castError) ->
-  vjs.log "Initialize Error: " + JSON.stringify(castError)
-  return
-
-vjs.ChromeCastComponent::sessionJoinedListener = (session) ->
-  vjs.log "Joined " + session.sessionId
-  return
-
-vjs.ChromeCastComponent::sessionUpdateListener = (session) ->
-
-vjs.ChromeCastComponent::receiverListener = (availability) ->
-  vjs.log "receivers available: " + ((if ("available" is availability) then "Yes" else "No"))
-  @show()  if "available" is availability
-  return
+#vjs.ChromeCastComponent.boundEvents = {}
 
 vjs.ChromeCastComponent::doLaunch = ->
   vjs.log "Cast video : " + @player_.currentSrc()
