@@ -1,4 +1,3 @@
-vjs.Player.prototype.chromeCastComponent = {};
 vjs.ChromeCastComponent = vjs.Button.extend({
     init: function(player, options) {
         this.settings = options;

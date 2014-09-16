@@ -23,13 +23,13 @@ module.exports = ->
         options:
           join: true
         files:
-          "cache/videojs.chromecast.js": ["src/videojs.chromecast.coffee"]
+          "cache/videojs.chromecast.js": ["src/videojs.chromecast.coffee", "src/videojs.chromecastComponent.coffee"]
 
     concat:
       options:
         separator: ""
       dist:
-        src: ["cache/videojs.chromecast.js", "src/videojs.chromecastComponent.js", "src/videojs.chromecastTech.js"]
+        src: ["cache/videojs.chromecast.js", "cache/videojs.chromecastComponent.js", "src/videojs.chromecastTech.js"]
         dest: "dist/videojs.chromecast.js"
 
     uglify:
