@@ -11,3 +11,8 @@ Test that Grunt's CLI is installed by running grunt --version. If the command is
 1. Fork and clone the repository.
 2. Run `npm install` to install the dependencies.
 3. Run `grunt` to grunt this project.
+
+### You can test your changes with the included demo.
+
+1. Run `node demo-server.js` to start the server.
+2. See `http://localhost:3000/demo/` in your browser.
