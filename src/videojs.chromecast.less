@@ -28,26 +28,39 @@
 
 // ChromecastTech
 .vjs-tech-chromecast {
-  .poster-image {
-    display: block;
+  .casting-image {
     position: absolute;
     top: 0; right: 0;
     left: 0; bottom: 0;
     background-color: #000;
+    background-repeat: no-repeat;
+    background-size: contain;
+    background-position: center;
   }
 
-  .poster-overlay {
-    display: block;
+  .casting-overlay {
     position: absolute;
     top: 0; right: 0;
     left: 0; bottom: 0;
-    background-color: rgba(0,0,0,.6);
-  }
+    background-color: #000;
+    opacity: 0.6;
 
-  .casting-label {
-    color: #FFF;
-    text-align: center;
-    vertical-align: middle;
-    line-height: 100px;
+    .casting-information {
+      position: absolute;
+      left: 15px; bottom: 50px;
+      height: 50px;
+      font-size: 25px;
+      line-height: 50px;
+      color: #FFF;
+
+      &:before {
+        content: "a";
+        font-family: "chromecast" !important;
+        font-size: 64px;
+        line-height: 50px;
+        float: left;
+        margin-right: 10px;
+      }
+    }
   }
 }
