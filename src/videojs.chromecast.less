@@ -47,19 +47,26 @@
 
     .casting-information {
       position: absolute;
-      left: 15px; bottom: 50px;
+      left: 15px; bottom: 50px; right: 15px;
       height: 50px;
-      font-size: 25px;
-      line-height: 50px;
       color: #FFF;
 
-      &:before {
-        content: "a";
+      .casting-icon {
         font-family: "chromecast" !important;
-        font-size: 64px;
+        font-size: 56px;
         line-height: 50px;
-        float: left;
         margin-right: 10px;
+        float: left;
+        width: 56px;
+        height: 50px;
+      }
+
+      .casting-description {
+        height: 50px;
+        font-size: 20px;
+        line-height: 20px;
+
+        small { font-size: 11px }
       }
     }
   }
