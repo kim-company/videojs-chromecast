@@ -35,14 +35,14 @@ module.exports = ->
         src: "dist/videojs.chromecast.js"
         dest: "dist/videojs.chromecast.min.js"
 
-    copy:
-      dist:
-        src: "src/videojs.chromecast.css"
-        dest: "dist/videojs.chromecast.css"
+    less:
+      development:
+        files:
+          "dist/videojs.chromecast.css": "src/videojs.chromecast.less"
 
     cssmin:
       dist:
-        src: "src/videojs.chromecast.css"
+        src: "dist/videojs.chromecast.css"
         dest: "dist/videojs.chromecast.min.css"
 
     usebanner:
@@ -61,9 +61,9 @@ module.exports = ->
     @loadNpmTasks "grunt-contrib-clean"
     @loadNpmTasks "grunt-contrib-uglify"
     @loadNpmTasks "grunt-contrib-cssmin"
-    @loadNpmTasks "grunt-contrib-copy"
     @loadNpmTasks "grunt-contrib-coffee"
+    @loadNpmTasks "grunt-contrib-less"
     @loadNpmTasks "grunt-banner"
 
     # Default task
-    @registerTask "default", ["clean", "coffee", "uglify", "copy", "cssmin", "usebanner"]
+    @registerTask "default", ["clean", "coffee", "uglify", "less", "cssmin", "usebanner"]
