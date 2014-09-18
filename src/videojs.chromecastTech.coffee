@@ -9,12 +9,10 @@ class vjs.ChromecastTech extends vjs.MediaTechController
     source.type is "video/mp4"
 
   constructor: (player, options, ready) ->
-    # Set the features that this Tech has
-    @features["volumeControl"] = true
-    @features["movingMediaElementInDOM"] = false
-    @features["fullscreenResize"] = false
-    @features["progressEvents"] = true
-    @features["timeupdateEvents"] = true
+    @["featuresVolumeControl"] = true
+    @["movingMediaElementInDOM"] = false
+    @["featuresFullscreenResize"] = false
+    @["featuresProgressEvents"] = true
 
     vjs.MediaTechController.call this, player, options, ready
 
