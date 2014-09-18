@@ -97,11 +97,24 @@
     };
 
     ChromecastComponent.prototype.onSessionSuccess = function(session) {
-      var loadRequest, mediaInfo;
+      var image, loadRequest, mediaInfo;
       vjs.log("Session initialized: " + session.sessionId);
       this.apiSession = session;
       this.addClass("connected");
       mediaInfo = new chrome.cast.media.MediaInfo(this.player_.currentSrc(), "video/mp4");
+      if (this.settings.metadata) {
+        mediaInfo.metadata = new chrome.cast.media.GenericMediaMetadata();
+        if (this.settings.metadata.title) {
+          mediaInfo.metadata.title = this.settings.metadata.title;
+        }
+        if (this.settings.metadata.subtitle) {
+          mediaInfo.metadata.subtitle = this.settings.metadata.subtitle;
+        }
+        if (this.player_.options_.poster) {
+          image = new chrome.cast.Image(this.player_.options_.poster);
+          mediaInfo.metadata.images = [image];
+        }
+      }
       loadRequest = new chrome.cast.media.LoadRequest(mediaInfo);
       loadRequest.autoplay = true;
       loadRequest.currentTime = this.player_.currentTime();
