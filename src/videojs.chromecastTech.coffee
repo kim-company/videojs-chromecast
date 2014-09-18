@@ -72,12 +72,6 @@ class vjs.ChromecastTech extends vjs.MediaTechController
   supportsFullScreen: ->
     false
 
-  enterFullScreen: ->
-    vjs.log "enterFullScreen"
-
-  exitFullScreen: ->
-    vjs.log "exitFullScreen"
-
   src: (src) ->
     vjs.log "ChromecastTech::src -> #{src}"
 
