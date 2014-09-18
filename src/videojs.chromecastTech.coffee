@@ -24,7 +24,7 @@ class vjs.ChromecastTech extends vjs.MediaTechController
       innerHTML: "<div class=\"casting-image\" style=\"background-image: url('#{@player_.options_.poster}')\"></div>
         <div class=\"casting-overlay\">
           <div class=\"casting-information\">
-            <div class=\"casting-icon\">a</div>
+            <div class=\"casting-icon\">&#58880</div>
             <div class=\"casting-description\">
               <small>CASTING TO</small><br>
               Chromecast
