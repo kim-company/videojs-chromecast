@@ -105,7 +105,8 @@
       loadRequest = new chrome.cast.media.LoadRequest(mediaInfo);
       loadRequest.autoplay = true;
       loadRequest.currentTime = this.player_.currentTime();
-      return this.apiSession.loadMedia(loadRequest, this.onMediaDiscovered.bind(this), this.castError);
+      this.apiSession.loadMedia(loadRequest, this.onMediaDiscovered.bind(this), this.castError);
+      return this.apiSession.addUpdateListener(this.onSessionUpdate.bind(this));
     };
 
     ChromecastComponent.prototype.onMediaDiscovered = function(media) {
@@ -118,15 +119,37 @@
       return this.casting = true;
     };
 
-    ChromecastComponent.prototype.onMediaStatusUpdate = function(event) {
+    ChromecastComponent.prototype.onSessionUpdate = function(isAlive) {
+      if (!this.apiMedia) {
+        return;
+      }
+      if (!isAlive) {
+        return this.onStopAppSuccess();
+      }
+    };
+
+    ChromecastComponent.prototype.onMediaStatusUpdate = function(isAlive) {
       if (!this.apiMedia) {
         return;
       }
       this.currentMediaTime = this.apiMedia.currentTime;
-      if (this.apiMedia.playerState === "IDLE") {
-        this.currentMediaTime = 0;
-        this.trigger("timeupdate");
-        return this.onStopAppSuccess();
+      switch (this.apiMedia.playerState) {
+        case chrome.cast.media.PlayerState.IDLE:
+          this.currentMediaTime = 0;
+          this.trigger("timeupdate");
+          return this.onStopAppSuccess();
+        case chrome.cast.media.PlayerState.PAUSED:
+          if (this.paused) {
+            return;
+          }
+          this.player_.pause();
+          return this.paused = true;
+        case chrome.cast.media.PlayerState.PLAYING:
+          if (!this.paused) {
+            return;
+          }
+          this.player_.play();
+          return this.paused = false;
       }
     };
 
@@ -149,7 +172,6 @@
       }
       if (this.paused) {
         this.apiMedia.play(null, this.mediaCommandSuccessCallback.bind(this, "Playing: " + this.apiMedia.sessionId), this.onError);
-        this.apiMedia.addUpdateListener(this.onMediaStatusUpdate.bind(this));
         return this.paused = false;
       }
     };
@@ -222,7 +244,7 @@
       this.removeClass("connected");
       this.player_.src(this.player_.options_["sources"]);
       vjs.insertFirst(this.player_.tech.el_, this.player_.el());
-      if (this.apiMedia.playerState === "IDLE") {
+      if (this.apiMedia.playerState === chrome.cast.media.PlayerState.IDLE) {
         this.player_.currentTime(0);
         this.player_.onPause();
       } else {

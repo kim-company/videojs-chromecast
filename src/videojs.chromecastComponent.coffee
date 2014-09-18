@@ -82,6 +82,7 @@ class vjs.ChromecastComponent extends vjs.Button
     loadRequest.currentTime = @player_.currentTime()
 
     @apiSession.loadMedia loadRequest, @onMediaDiscovered.bind(this), @castError
+    @apiSession.addUpdateListener @onSessionUpdate.bind(this)
 
   onMediaDiscovered: (media) ->
     @apiMedia = media
@@ -94,14 +95,29 @@ class vjs.ChromecastComponent extends vjs.Button
     @player_.userActive true
     @casting = true
 
-  onMediaStatusUpdate: (event) ->
+  onSessionUpdate: (isAlive) ->
+    return unless @apiMedia
+
+    @onStopAppSuccess() if not isAlive
+
+  onMediaStatusUpdate: (isAlive) ->
     return unless @apiMedia
 
     @currentMediaTime = @apiMedia.currentTime
-    if @apiMedia.playerState is "IDLE"
-      @currentMediaTime = 0
-      @trigger "timeupdate"
-      @onStopAppSuccess()
+
+    switch @apiMedia.playerState
+      when chrome.cast.media.PlayerState.IDLE
+        @currentMediaTime = 0
+        @trigger "timeupdate"
+        @onStopAppSuccess()
+      when chrome.cast.media.PlayerState.PAUSED
+        return if @paused
+        @player_.pause()
+        @paused = true
+      when chrome.cast.media.PlayerState.PLAYING
+        return unless @paused
+        @player_.play()
+        @paused = false
 
   startProgressTimer: (callback) ->
     if @timer
@@ -118,7 +134,6 @@ class vjs.ChromecastComponent extends vjs.Button
     return unless @apiMedia
     if @paused
       @apiMedia.play null, @mediaCommandSuccessCallback.bind(this, "Playing: " + @apiMedia.sessionId), @onError
-      @apiMedia.addUpdateListener @onMediaStatusUpdate.bind(this)
 
       @paused = false
 
@@ -183,7 +198,7 @@ class vjs.ChromecastComponent extends vjs.Button
 
     vjs.insertFirst @player_.tech.el_, @player_.el()
 
-    if @apiMedia.playerState is "IDLE"
+    if @apiMedia.playerState is chrome.cast.media.PlayerState.IDLE
       @player_.currentTime 0
       @player_.onPause()
     else
