@@ -75,7 +75,16 @@ class vjs.ChromecastComponent extends vjs.Button
     @apiSession = session
     @addClass "connected"
 
-    mediaInfo = new chrome.cast.media.MediaInfo(@player_.currentSrc(), "video/mp4")
+    mediaInfo = new chrome.cast.media.MediaInfo(@player_.currentSrc(), "video/mp4");
+
+    if @settings.metadata
+      mediaInfo.metadata = new chrome.cast.media.GenericMediaMetadata();
+      mediaInfo.metadata.title = @settings.metadata.title if @settings.metadata.title
+      mediaInfo.metadata.subtitle = @settings.metadata.subtitle if @settings.metadata.subtitle
+
+      if @player_.options_.poster
+        image = new chrome.cast.Image(@player_.options_.poster)
+        mediaInfo.metadata.images = [image]
 
     loadRequest = new chrome.cast.media.LoadRequest(mediaInfo)
     loadRequest.autoplay = true
