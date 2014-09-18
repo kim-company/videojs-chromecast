@@ -95,12 +95,12 @@ class vjs.ChromecastComponent extends vjs.Button
     @player_.userActive true
     @casting = true
 
-  onSessionUpdate: (event) ->
+  onSessionUpdate: (isAlive) ->
     return unless @apiMedia
 
-    @onStopAppSuccess() if event == false
+    @onStopAppSuccess() if not isAlive
 
-  onMediaStatusUpdate: (event) ->
+  onMediaStatusUpdate: (isAlive) ->
     return unless @apiMedia
 
     @currentMediaTime = @apiMedia.currentTime
