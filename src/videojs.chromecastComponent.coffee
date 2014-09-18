@@ -97,8 +97,6 @@ class vjs.ChromecastComponent extends vjs.Button
   onMediaStatusUpdate: (event) ->
     return unless @apiMedia
 
-    console.log @apiMedia
-
     @currentMediaTime = @apiMedia.currentTime
 
     switch @apiMedia.playerState
