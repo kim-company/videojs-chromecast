@@ -97,23 +97,24 @@ class vjs.ChromecastComponent extends vjs.Button
   onMediaStatusUpdate: (event) ->
     return unless @apiMedia
 
-    console.log @player_
+    console.log @apiMedia
     console.log "##############"
 
     @currentMediaTime = @apiMedia.currentTime
 
-    if @apiMedia.playerState is "IDLE"
-      @currentMediaTime = 0
-      @trigger "timeupdate"
-      @onStopAppSuccess()
-    else if @apiMedia.playerState is "PAUSED"
-      return if @paused
-      @player_.pause()
-      @paused = true
-    else if @apiMedia.playerState is "PLAYING"
-      return unless @paused
-      @player_.play()
-      @paused = false
+    switch @apiMedia.playerState
+      when "IDLE"
+        @currentMediaTime = 0
+        @trigger "timeupdate"
+        @onStopAppSuccess()
+      when "PAUSED"
+        return if @paused
+        @player_.pause()
+        @paused = true
+      when "PLAYING"
+        return unless @paused
+        @player_.play()
+        @paused = false
 
   startProgressTimer: (callback) ->
     if @timer
