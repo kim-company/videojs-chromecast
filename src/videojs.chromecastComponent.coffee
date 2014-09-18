@@ -82,6 +82,7 @@ class vjs.ChromecastComponent extends vjs.Button
     loadRequest.currentTime = @player_.currentTime()
 
     @apiSession.loadMedia loadRequest, @onMediaDiscovered.bind(this), @castError
+    @apiSession.addUpdateListener @onSessionUpdate.bind(this)
 
   onMediaDiscovered: (media) ->
     @apiMedia = media
@@ -93,6 +94,11 @@ class vjs.ChromecastComponent extends vjs.Button
     @player_.loadTech "ChromecastTech", {}
     @player_.userActive true
     @casting = true
+
+  onSessionUpdate: (event) ->
+    return unless @apiMedia
+
+    @onStopAppSuccess() if event == false
 
   onMediaStatusUpdate: (event) ->
     return unless @apiMedia
