@@ -16,8 +16,8 @@ If you are not able to configure the player, check out the [demo directory](http
 #### Configuration example
 ```javascript
 videojs("my_player_id", {
-  "plugins": {
-    "chromecast": {
+  plugins: {
+    chromecast: {
       appId: "AppID of your Chromecast App",
       metadata: {
         title: "Title",
