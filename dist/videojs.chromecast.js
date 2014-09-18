@@ -1,4 +1,4 @@
-/*! videojs-chromecast - v0.0.1 - 2014-09-16
+/*! videojs-chromecast - v0.0.1 - 2014-09-18
 * https://github.com/kim-company/videojs-chromecast
 * Copyright (c) 2014 KIM Keep In Mind GmbH, srl; Licensed MIT */
 
@@ -278,9 +278,9 @@
       this.features["timeupdateEvents"] = true;
       vjs.MediaTechController.call(this, player, options, ready);
       this.el_ = videojs.Component.prototype.createEl("div", {
-        id: "myId",
-        className: "vjs-tech",
-        innerHTML: "<img src=\"" + this.player_.options_.poster + "\" class=\"backgroundImage\"/><div class=\"currentlyCasting\"><h2 class=\"castingLabel\">Casting to device</h2></div>"
+        id: "" + this.player_.id_ + "_chromecast_api",
+        className: "vjs-tech vjs-tech-chromecast",
+        innerHTML: "<div class=\"casting-image\" style=\"background-image: url('" + this.player_.options_.poster + "')\"></div><div class=\"casting-overlay\"><div class=\"casting-information\"><div class=\"casting-icon\">&#58880</div><div class=\"casting-description\"><small>CASTING TO</small><br>Chromecast</div></div>"
       });
       vjs.insertFirst(this.el_, this.player_.el());
       this.triggerReady();
