@@ -192,16 +192,17 @@ class vjs.ChromecastComponent extends vjs.Button
     clearInterval @timer
     @casting = false
     @removeClass "connected"
+
+    # vjs.insertFirst @player_.tech.el_, @player_.el()
+
     @player_.src @player_.options_["sources"]
 
-    vjs.insertFirst @player_.tech.el_, @player_.el()
-
-    if @apiMedia.playerState is chrome.cast.media.PlayerState.IDLE
-      @player_.currentTime 0
-      @player_.onPause()
-    else
-      @player_.currentTime @currentMediaTime
-      @player_.play() unless @paused
+    # if @apiMedia.playerState is chrome.cast.media.PlayerState.IDLE
+    #   @player_.currentTime 0
+    #   @player_.onPause()
+    # else
+    #   @player_.currentTime @currentMediaTime
+    #   @player_.play() unless @paused
 
     @apiMedia = null
     @apiSession = null
