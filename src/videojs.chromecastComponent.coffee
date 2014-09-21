@@ -1,7 +1,5 @@
 class vjs.ChromecastComponent extends vjs.Button
-  kind_: "chromecast"
   buttonText: "Chromecast"
-  className: "vjs-chromecast-button "
 
   apiInitialized: false
   apiSession: null
@@ -19,14 +17,9 @@ class vjs.ChromecastComponent extends vjs.Button
   constructor: (player, @settings) ->
     vjs.Button.call this, player, settings
 
-    # Disable the plugin if the player has no controls
     @disable() unless player.controls()
-
     @hide()
-    @el_.setAttribute "role", "button"
-
     @initializeApi()
-    return
 
   initializeApi: ->
     # Check if the browser is Google Chrome
@@ -135,10 +128,6 @@ class vjs.ChromecastComponent extends vjs.Button
 
     @timer = setInterval(callback.bind(this), @timerStep)
 
-  ###
-  MEDIA PLAYER EVENTS
-  ###
-
   play: ->
     return unless @apiMedia
     if @paused
@@ -217,7 +206,7 @@ class vjs.ChromecastComponent extends vjs.Button
     @apiMedia = null
 
   buildCSSClass: ->
-    @className + vjs.Button::buildCSSClass.call(this)
+    "vjs-chromecast-button #{vjs.Button::buildCSSClass.call(this)}"
 
   createEl: (type, props) ->
     vjs.Button::createEl.call(this, "div")
