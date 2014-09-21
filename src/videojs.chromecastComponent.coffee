@@ -204,6 +204,7 @@ class vjs.ChromecastComponent extends vjs.Button
       @player_.play() unless @paused
 
     @apiMedia = null
+    @apiSession = null
 
   buildCSSClass: ->
     "vjs-chromecast-button #{vjs.Button::buildCSSClass.call(this)}"
