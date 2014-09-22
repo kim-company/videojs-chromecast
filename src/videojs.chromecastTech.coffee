@@ -16,7 +16,7 @@ class vjs.ChromecastTech extends vjs.MediaTechController
     @el_ = videojs.Component::createEl "div",
       id: "#{@player_.id_}_chromecast_api"
       className: "vjs-tech vjs-tech-chromecast"
-      innerHTML: "<div class=\"casting-image\" style=\"background-image: url('#{@player_.options_.poster}')\"></div><div class=\"casting-overlay\"><div class=\"casting-information\"><div class=\"casting-icon\">&#58880</div><div class=\"casting-description\"><small>CASTING TO</small><br>Chromecast</div></div>"
+      innerHTML: "<div class=\"casting-image\" style=\"background-image: url('#{@player_.options_.poster}')\"></div><div class=\"casting-overlay\"><div class=\"casting-information\"><div class=\"casting-icon\">&#58880</div><div class=\"casting-description\"><small>#{@localize "CASTING TO"}</small><br>Chromecast</div></div>"
 
     vjs.insertFirst @el_, @player_.el()
     @triggerReady()
