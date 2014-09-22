@@ -21,6 +21,7 @@ module.exports = ->
           join: true
         files:
           "dist/videojs.chromecast.js": [
+            "lang/*"
             "src/videojs.chromecast.coffee"
             "src/videojs.chromecastComponent.coffee"
             "src/videojs.chromecastTech.coffee"
