@@ -1,5 +1,6 @@
 class vjs.ChromecastComponent extends vjs.Button
   buttonText: "Chromecast"
+  inactivityTimeout: 2000
 
   apiInitialized: false
   apiSession: null
@@ -94,8 +95,12 @@ class vjs.ChromecastComponent extends vjs.Button
 
     @paused = false
     @player_.loadTech "ChromecastTech", {}
-    @player_.userActive true
     @casting = true
+
+    # Always show the controlbar
+    @inactivityTimeout = @player_.options_.inactivityTimeout
+    @player_.options_.inactivityTimeout = 0
+    @player_.userActive true
 
   onSessionUpdate: (isAlive) ->
     return unless @apiMedia
@@ -197,6 +202,9 @@ class vjs.ChromecastComponent extends vjs.Button
 
     # Hide the default HTML5 player controls.
     @player_.tech.setControls(false)
+
+    # Enable user activity timeout
+    @player_.options_.inactivityTimeout = @inactivityTimeout
 
     @player_.ready ->
       @player_.currentTime @currentMediaTime
