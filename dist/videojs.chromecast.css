@@ -1,4 +1,4 @@
-/*! videojs-chromecast - v0.0.1 - 2014-09-22
+/*! videojs-chromecast - v1.0.0 - 2014-09-22
 * https://github.com/kim-company/videojs-chromecast
 * Copyright (c) 2014 KIM Keep In Mind GmbH, srl; Licensed MIT */
 
