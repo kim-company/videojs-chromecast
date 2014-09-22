@@ -70,7 +70,7 @@
     };
 
     ChromecastComponent.prototype.sessionJoinedListener = function(session) {
-      return vjs.log("Joined " + session.sessionId);
+      return console.log("Session joined");
     };
 
     ChromecastComponent.prototype.receiverListener = function(availability) {
@@ -126,7 +126,9 @@
       this.apiMedia = media;
       this.apiMedia.addUpdateListener(this.onMediaStatusUpdate.bind(this));
       this.startProgressTimer(this.incrementMediaTime.bind(this));
-      this.player_.loadTech("ChromecastTech", {});
+      this.player_.loadTech("ChromecastTech", {
+        receiver: this.apiSession.receiver.friendlyName
+      });
       this.casting = true;
       this.paused = this.player_.paused();
       this.inactivityTimeout = this.player_.options_.inactivityTimeout;
@@ -307,7 +309,7 @@
       this.el_ = videojs.Component.prototype.createEl("div", {
         id: "" + this.player_.id_ + "_chromecast_api",
         className: "vjs-tech vjs-tech-chromecast",
-        innerHTML: "<div class=\"casting-image\" style=\"background-image: url('" + this.player_.options_.poster + "')\"></div><div class=\"casting-overlay\"><div class=\"casting-information\"><div class=\"casting-icon\">&#58880</div><div class=\"casting-description\"><small>" + (this.localize("CASTING TO")) + "</small><br>Chromecast</div></div>"
+        innerHTML: "<div class=\"casting-image\" style=\"background-image: url('" + this.player_.options_.poster + "')\"></div><div class=\"casting-overlay\"><div class=\"casting-information\"><div class=\"casting-icon\">&#58880</div><div class=\"casting-description\"><small>" + (this.localize("CASTING TO")) + "</small><br>" + options.source.receiver + "</div></div>"
       });
       vjs.insertFirst(this.el_, this.player_.el());
       this.triggerReady();

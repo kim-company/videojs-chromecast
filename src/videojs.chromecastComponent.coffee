@@ -45,7 +45,7 @@ class vjs.ChromecastComponent extends vjs.Button
     chrome.cast.initialize(apiConfig, @onInitSuccess.bind(this), @castError)
 
   sessionJoinedListener: (session) ->
-    vjs.log "Joined #{session.sessionId}"
+    console.log "Session joined"
 
   receiverListener: (availability) ->
     @show() if availability is "available"
@@ -93,7 +93,9 @@ class vjs.ChromecastComponent extends vjs.Button
 
     @startProgressTimer @incrementMediaTime.bind(this)
 
-    @player_.loadTech "ChromecastTech", {}
+    @player_.loadTech "ChromecastTech",
+      receiver: @apiSession.receiver.friendlyName
+
     @casting = true
     @paused = @player_.paused()
 
