@@ -11,9 +11,8 @@
   });
 
   vjs.plugin("chromecast", function(options) {
-    this.player = this;
     this.chromecastComponent = new vjs.ChromecastComponent(this, options);
-    return this.player.controlBar.addChild(this.chromecastComponent);
+    return this.controlBar.addChild(this.chromecastComponent);
   });
 
   vjs.ChromecastComponent = (function(_super) {
