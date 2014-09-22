@@ -126,9 +126,9 @@
       this.apiMedia = media;
       this.apiMedia.addUpdateListener(this.onMediaStatusUpdate.bind(this));
       this.startProgressTimer(this.incrementMediaTime.bind(this));
-      this.paused = false;
       this.player_.loadTech("ChromecastTech", {});
       this.casting = true;
+      this.paused = this.player_.paused();
       this.inactivityTimeout = this.player_.options_.inactivityTimeout;
       this.player_.options_.inactivityTimeout = 0;
       return this.player_.userActive(true);

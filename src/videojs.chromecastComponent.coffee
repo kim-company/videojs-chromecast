@@ -93,9 +93,9 @@ class vjs.ChromecastComponent extends vjs.Button
 
     @startProgressTimer @incrementMediaTime.bind(this)
 
-    @paused = false
     @player_.loadTech "ChromecastTech", {}
     @casting = true
+    @paused = @player_.paused()
 
     # Always show the controlbar
     @inactivityTimeout = @player_.options_.inactivityTimeout
