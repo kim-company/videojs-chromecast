@@ -1,10 +1,14 @@
-/*! videojs-chromecast - v0.0.1 - 2014-09-18
+/*! videojs-chromecast - v0.0.1 - 2014-09-22
 * https://github.com/kim-company/videojs-chromecast
 * Copyright (c) 2014 KIM Keep In Mind GmbH, srl; Licensed MIT */
 
 (function() {
   var __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+
+  vjs.addLanguage("de", {
+    "CASTING TO": "WIEDERGABE AUF"
+  });
 
   vjs.plugin("chromecast", function(options) {
     this.player = this;
@@ -15,11 +19,9 @@
   vjs.ChromecastComponent = (function(_super) {
     __extends(ChromecastComponent, _super);
 
-    ChromecastComponent.prototype.kind_ = "chromecast";
-
     ChromecastComponent.prototype.buttonText = "Chromecast";
 
-    ChromecastComponent.prototype.className = "vjs-chromecast-button ";
+    ChromecastComponent.prototype.inactivityTimeout = 2000;
 
     ChromecastComponent.prototype.apiInitialized = false;
 
@@ -48,9 +50,7 @@
         this.disable();
       }
       this.hide();
-      this.el_.setAttribute("role", "button");
       this.initializeApi();
-      return;
     }
 
     ChromecastComponent.prototype.initializeApi = function() {
@@ -128,8 +128,10 @@
       this.startProgressTimer(this.incrementMediaTime.bind(this));
       this.paused = false;
       this.player_.loadTech("ChromecastTech", {});
-      this.player_.userActive(true);
-      return this.casting = true;
+      this.casting = true;
+      this.inactivityTimeout = this.player_.options_.inactivityTimeout;
+      this.player_.options_.inactivityTimeout = 0;
+      return this.player_.userActive(true);
     };
 
     ChromecastComponent.prototype.onSessionUpdate = function(isAlive) {
@@ -173,11 +175,6 @@
       }
       return this.timer = setInterval(callback.bind(this), this.timerStep);
     };
-
-
-    /*
-    MEDIA PLAYER EVENTS
-     */
 
     ChromecastComponent.prototype.play = function() {
       if (!this.apiMedia) {
@@ -257,20 +254,20 @@
       this.removeClass("connected");
       this.player_.src(this.player_.options_["sources"]);
       vjs.insertFirst(this.player_.tech.el_, this.player_.el());
-      if (this.apiMedia.playerState === chrome.cast.media.PlayerState.IDLE) {
-        this.player_.currentTime(0);
-        this.player_.onPause();
-      } else {
+      this.player_.tech.setControls(false);
+      this.player_.options_.inactivityTimeout = this.inactivityTimeout;
+      this.player_.ready(function() {
         this.player_.currentTime(this.currentMediaTime);
         if (!this.paused) {
-          this.player_.play();
+          return this.player_.play();
         }
-      }
-      return this.apiMedia = null;
+      });
+      this.apiMedia = null;
+      return this.apiSession = null;
     };
 
     ChromecastComponent.prototype.buildCSSClass = function() {
-      return this.className + vjs.Button.prototype.buildCSSClass.call(this);
+      return "vjs-chromecast-button " + (vjs.Button.prototype.buildCSSClass.call(this));
     };
 
     ChromecastComponent.prototype.createEl = function(type, props) {
@@ -293,10 +290,6 @@
   vjs.ChromecastTech = (function(_super) {
     __extends(ChromecastTech, _super);
 
-    ChromecastTech.prototype.defaultMuted = false;
-
-    ChromecastTech.prototype.loop = false;
-
     ChromecastTech.isSupported = function() {
       return this.player_.chromecastComponent.apiInitialized;
     };
@@ -306,16 +299,15 @@
     };
 
     function ChromecastTech(player, options, ready) {
-      this.features["volumeControl"] = true;
-      this.features["movingMediaElementInDOM"] = false;
-      this.features["fullscreenResize"] = false;
-      this.features["progressEvents"] = true;
-      this.features["timeupdateEvents"] = true;
+      this["featuresVolumeControl"] = true;
+      this["movingMediaElementInDOM"] = false;
+      this["featuresFullscreenResize"] = false;
+      this["featuresProgressEvents"] = true;
       vjs.MediaTechController.call(this, player, options, ready);
       this.el_ = videojs.Component.prototype.createEl("div", {
         id: "" + this.player_.id_ + "_chromecast_api",
         className: "vjs-tech vjs-tech-chromecast",
-        innerHTML: "<div class=\"casting-image\" style=\"background-image: url('" + this.player_.options_.poster + "')\"></div><div class=\"casting-overlay\"><div class=\"casting-information\"><div class=\"casting-icon\">&#58880</div><div class=\"casting-description\"><small>CASTING TO</small><br>Chromecast</div></div>"
+        innerHTML: "<div class=\"casting-image\" style=\"background-image: url('" + this.player_.options_.poster + "')\"></div><div class=\"casting-overlay\"><div class=\"casting-information\"><div class=\"casting-icon\">&#58880</div><div class=\"casting-description\"><small>" + (this.localize("CASTING TO")) + "</small><br>Chromecast</div></div>"
       });
       vjs.insertFirst(this.el_, this.player_.el());
       this.triggerReady();
@@ -352,16 +344,6 @@
       return this.player_.chromecastComponent.seekMedia(seconds);
     };
 
-    ChromecastTech.prototype.duration = function() {
-      return 0;
-    };
-
-    ChromecastTech.prototype.buffered = function() {
-      return {
-        length: 0
-      };
-    };
-
     ChromecastTech.prototype.volume = function() {
       return this.player_.chromecastComponent.currentVolume;
     };
@@ -379,74 +361,6 @@
     };
 
     ChromecastTech.prototype.supportsFullScreen = function() {
-      return false;
-    };
-
-    ChromecastTech.prototype.enterFullScreen = function() {
-      return vjs.log("enterFullScreen");
-    };
-
-    ChromecastTech.prototype.exitFullScreen = function() {
-      return vjs.log("exitFullScreen");
-    };
-
-    ChromecastTech.prototype.src = function(src) {
-      return vjs.log("ChromecastTech::src -> " + src);
-    };
-
-    ChromecastTech.prototype.load = function() {
-      return vjs.log("ChromecastTech::load");
-    };
-
-    ChromecastTech.prototype.currentSrc = function() {
-      return vjs.log("currentSrc");
-    };
-
-    ChromecastTech.prototype.poster = function() {
-      return vjs.log("poster?");
-    };
-
-    ChromecastTech.prototype.setPoster = function(val) {
-      return vjs.log("setPoster: " + val);
-    };
-
-    ChromecastTech.prototype.preload = function() {
-      return true;
-    };
-
-    ChromecastTech.prototype.setPreload = function(val) {
-      return vjs.log("setPreload: " + val);
-    };
-
-    ChromecastTech.prototype.autoplay = function() {
-      return true;
-    };
-
-    ChromecastTech.prototype.setAutoplay = function(val) {
-      return vjs.log("setAutoplay: " + val);
-    };
-
-    ChromecastTech.prototype.controls = function() {
-      return true;
-    };
-
-    ChromecastTech.prototype.setControls = function(val) {
-      return vjs.log("setControls: " + val);
-    };
-
-    ChromecastTech.prototype.setLoop = function(val) {
-      return vjs.log("setLoop: " + val);
-    };
-
-    ChromecastTech.prototype.error = function() {
-      return false;
-    };
-
-    ChromecastTech.prototype.seeking = function() {
-      return false;
-    };
-
-    ChromecastTech.prototype.ended = function() {
       return false;
     };
 
