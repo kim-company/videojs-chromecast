@@ -1,7 +1,6 @@
 class vjs.ChromecastComponent extends vjs.Button
-  kind_: "chromecast"
   buttonText: "Chromecast"
-  className: "vjs-chromecast-button "
+  inactivityTimeout: 2000
 
   apiInitialized: false
   apiSession: null
@@ -19,14 +18,9 @@ class vjs.ChromecastComponent extends vjs.Button
   constructor: (player, @settings) ->
     vjs.Button.call this, player, settings
 
-    # Disable the plugin if the player has no controls
     @disable() unless player.controls()
-
     @hide()
-    @el_.setAttribute "role", "button"
-
     @initializeApi()
-    return
 
   initializeApi: ->
     # Check if the browser is Google Chrome
@@ -101,8 +95,12 @@ class vjs.ChromecastComponent extends vjs.Button
 
     @paused = false
     @player_.loadTech "ChromecastTech", {}
-    @player_.userActive true
     @casting = true
+
+    # Always show the controlbar
+    @inactivityTimeout = @player_.options_.inactivityTimeout
+    @player_.options_.inactivityTimeout = 0
+    @player_.userActive true
 
   onSessionUpdate: (isAlive) ->
     return unless @apiMedia
@@ -135,15 +133,10 @@ class vjs.ChromecastComponent extends vjs.Button
 
     @timer = setInterval(callback.bind(this), @timerStep)
 
-  ###
-  MEDIA PLAYER EVENTS
-  ###
-
   play: ->
     return unless @apiMedia
     if @paused
       @apiMedia.play null, @mediaCommandSuccessCallback.bind(this, "Playing: " + @apiMedia.sessionId), @onError
-
       @paused = false
 
   pause: ->
@@ -203,21 +196,25 @@ class vjs.ChromecastComponent extends vjs.Button
     clearInterval @timer
     @casting = false
     @removeClass "connected"
-    @player_.src @player_.options_["sources"]
 
+    @player_.src @player_.options_["sources"]
     vjs.insertFirst @player_.tech.el_, @player_.el()
 
-    if @apiMedia.playerState is chrome.cast.media.PlayerState.IDLE
-      @player_.currentTime 0
-      @player_.onPause()
-    else
+    # Hide the default HTML5 player controls.
+    @player_.tech.setControls(false)
+
+    # Enable user activity timeout
+    @player_.options_.inactivityTimeout = @inactivityTimeout
+
+    @player_.ready ->
       @player_.currentTime @currentMediaTime
       @player_.play() unless @paused
 
     @apiMedia = null
+    @apiSession = null
 
   buildCSSClass: ->
-    @className + vjs.Button::buildCSSClass.call(this)
+    "vjs-chromecast-button #{vjs.Button::buildCSSClass.call(this)}"
 
   createEl: (type, props) ->
     vjs.Button::createEl.call(this, "div")

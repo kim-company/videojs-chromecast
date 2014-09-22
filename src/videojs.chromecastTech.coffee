@@ -1,7 +1,4 @@
 class vjs.ChromecastTech extends vjs.MediaTechController
-  defaultMuted: false
-  loop: false
-
   @isSupported = ->
     @player_.chromecastComponent.apiInitialized
 
@@ -9,20 +6,17 @@ class vjs.ChromecastTech extends vjs.MediaTechController
     source.type is "video/mp4"
 
   constructor: (player, options, ready) ->
-    # Set the features that this Tech has
-    @features["volumeControl"] = true
-    @features["movingMediaElementInDOM"] = false
-    @features["fullscreenResize"] = false
-    @features["progressEvents"] = true
-    @features["timeupdateEvents"] = true
+    @["featuresVolumeControl"] = true
+    @["movingMediaElementInDOM"] = false
+    @["featuresFullscreenResize"] = false
+    @["featuresProgressEvents"] = true
 
     vjs.MediaTechController.call this, player, options, ready
 
-    @el_ = videojs.Component::createEl("div",
+    @el_ = videojs.Component::createEl "div",
       id: "#{@player_.id_}_chromecast_api"
       className: "vjs-tech vjs-tech-chromecast"
-      innerHTML: "<div class=\"casting-image\" style=\"background-image: url('#{@player_.options_.poster}')\"></div><div class=\"casting-overlay\"><div class=\"casting-information\"><div class=\"casting-icon\">&#58880</div><div class=\"casting-description\"><small>CASTING TO</small><br>Chromecast</div></div>"
-    )
+      innerHTML: "<div class=\"casting-image\" style=\"background-image: url('#{@player_.options_.poster}')\"></div><div class=\"casting-overlay\"><div class=\"casting-information\"><div class=\"casting-icon\">&#58880</div><div class=\"casting-description\"><small>#{@localize "CASTING TO"}</small><br>Chromecast</div></div>"
 
     vjs.insertFirst @el_, @player_.el()
     @triggerReady()
@@ -51,12 +45,6 @@ class vjs.ChromecastTech extends vjs.MediaTechController
   setCurrentTime: (seconds) ->
     @player_.chromecastComponent.seekMedia seconds
 
-  duration: ->
-    0
-
-  buffered: ->
-    length: 0
-
   volume: ->
     @player_.chromecastComponent.currentVolume
 
@@ -70,49 +58,4 @@ class vjs.ChromecastTech extends vjs.MediaTechController
     @player_.chromecastComponent.setMediaVolume @player_.chromecastComponent.currentVolume, muted
 
   supportsFullScreen: ->
-    false
-
-  src: (src) ->
-    vjs.log "ChromecastTech::src -> #{src}"
-
-  load: ->
-    vjs.log "ChromecastTech::load"
-
-  currentSrc: ->
-    vjs.log "currentSrc"
-
-  poster: ->
-    vjs.log "poster?"
-
-  setPoster: (val) ->
-    vjs.log "setPoster: #{val}"
-
-  preload: ->
-    true
-
-  setPreload: (val) ->
-    vjs.log "setPreload: #{val}"
-
-  autoplay: ->
-    true
-
-  setAutoplay: (val) ->
-    vjs.log "setAutoplay: #{val}"
-
-  controls: ->
-    true
-
-  setControls: (val) ->
-    vjs.log "setControls: #{val}"
-
-  setLoop: (val) ->
-    vjs.log "setLoop: #{val}"
-
-  error: ->
-    false
-
-  seeking: ->
-    false
-
-  ended: ->
     false
