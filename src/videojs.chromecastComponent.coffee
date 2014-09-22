@@ -193,16 +193,15 @@ class vjs.ChromecastComponent extends vjs.Button
     @casting = false
     @removeClass "connected"
 
-    # vjs.insertFirst @player_.tech.el_, @player_.el()
-
     @player_.src @player_.options_["sources"]
+    vjs.insertFirst @player_.tech.el_, @player_.el()
 
-    # if @apiMedia.playerState is chrome.cast.media.PlayerState.IDLE
-    #   @player_.currentTime 0
-    #   @player_.onPause()
-    # else
-    #   @player_.currentTime @currentMediaTime
-    #   @player_.play() unless @paused
+    # Hide the default HTML5 player controls.
+    @player_.tech.setControls(false)
+
+    @player_.ready ->
+      @player_.currentTime @currentMediaTime
+      @player_.play() unless @paused
 
     @apiMedia = null
     @apiSession = null
