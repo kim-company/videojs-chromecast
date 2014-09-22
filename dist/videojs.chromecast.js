@@ -10,6 +10,10 @@
     "CASTING TO": "WIEDERGABE AUF"
   });
 
+  vjs.addLanguage("it", {
+    "CASTING TO": "PLAYBACK SU"
+  });
+
   vjs.plugin("chromecast", function(options) {
     this.chromecastComponent = new vjs.ChromecastComponent(this, options);
     return this.controlBar.addChild(this.chromecastComponent);
