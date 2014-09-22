@@ -132,7 +132,6 @@ class vjs.ChromecastComponent extends vjs.Button
     return unless @apiMedia
     if @paused
       @apiMedia.play null, @mediaCommandSuccessCallback.bind(this, "Playing: " + @apiMedia.sessionId), @onError
-
       @paused = false
 
   pause: ->

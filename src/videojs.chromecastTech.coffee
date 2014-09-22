@@ -1,7 +1,4 @@
 class vjs.ChromecastTech extends vjs.MediaTechController
-  defaultMuted: false
-  loop: false
-
   @isSupported = ->
     @player_.chromecastComponent.apiInitialized
 
@@ -48,12 +45,6 @@ class vjs.ChromecastTech extends vjs.MediaTechController
   setCurrentTime: (seconds) ->
     @player_.chromecastComponent.seekMedia seconds
 
-  duration: ->
-    0
-
-  buffered: ->
-    length: 0
-
   volume: ->
     @player_.chromecastComponent.currentVolume
 
@@ -67,49 +58,4 @@ class vjs.ChromecastTech extends vjs.MediaTechController
     @player_.chromecastComponent.setMediaVolume @player_.chromecastComponent.currentVolume, muted
 
   supportsFullScreen: ->
-    false
-
-  src: (src) ->
-    vjs.log "ChromecastTech::src -> #{src}"
-
-  load: ->
-    vjs.log "ChromecastTech::load"
-
-  currentSrc: ->
-    vjs.log "currentSrc"
-
-  poster: ->
-    vjs.log "poster?"
-
-  setPoster: (val) ->
-    vjs.log "setPoster: #{val}"
-
-  preload: ->
-    true
-
-  setPreload: (val) ->
-    vjs.log "setPreload: #{val}"
-
-  autoplay: ->
-    true
-
-  setAutoplay: (val) ->
-    vjs.log "setAutoplay: #{val}"
-
-  controls: ->
-    true
-
-  setControls: (val) ->
-    vjs.log "setControls: #{val}"
-
-  setLoop: (val) ->
-    vjs.log "setLoop: #{val}"
-
-  error: ->
-    false
-
-  seeking: ->
-    false
-
-  ended: ->
     false
