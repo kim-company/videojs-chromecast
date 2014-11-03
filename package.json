@@ -10,16 +10,15 @@
   "engines": {
     "node": ">= 0.8.0"
   },
-  "dependencies": {
-    "express": "~ 4.9.0"
-  },
+  "dependencies": {},
   "devDependencies": {
+    "express": "~ 4.10.1",
     "grunt": "~ 0.4.0",
     "grunt-contrib-uglify": "~ 0.6.0",
     "grunt-contrib-clean": "~ 0.6.0",
     "grunt-contrib-cssmin": "~ 0.10.0",
-    "grunt-contrib-coffee": "~ 0.11.0",
-    "grunt-contrib-less": "~ 0.11.0",
+    "grunt-contrib-coffee": "~ 0.12.0",
+    "grunt-contrib-less": "~ 0.12.0",
     "grunt-banner": "~ 0.2.0"
   }
 }

@@ -29,7 +29,6 @@ videojs("my_player_id", {
 ```
 
 ## Contributing
-[![david-dm](http://img.shields.io/david/kim-company/videojs-chromecast.svg?style=flat)](https://david-dm.org/kim-company/videojs-chromecast/)
 [![david-dm](http://img.shields.io/david/dev/kim-company/videojs-chromecast.svg?style=flat)](https://david-dm.org/kim-company/videojs-chromecast/)
 
 Ensure that you have installed [Node.js](http://www.nodejs.org) and [npm](http://www.npmjs.org/)
