@@ -63,7 +63,7 @@ var vjs = function(id, options, ready){
 var videojs = window['videojs'] = vjs;
 
 // CDN Version. Used to target right flash swf.
-vjs.CDN_VERSION = '4.8';
+vjs.CDN_VERSION = '4.10';
 vjs.ACCESS_PROTOCOL = ('https:' == document.location.protocol ? 'https://' : 'http://');
 
 /**
@@ -116,7 +116,7 @@ vjs.options = {
 };
 
 // Set CDN Version of swf
-// The added (+) blocks the replace from changing this 4.8 string
+// The added (+) blocks the replace from changing this 4.10 string
 if (vjs.CDN_VERSION !== 'GENERATED'+'_CDN_VSN') {
   videojs.options['flash']['swf'] = vjs.ACCESS_PROTOCOL + 'vjs.zencdn.net/'+vjs.CDN_VERSION+'/video-js.swf';
 }
@@ -360,7 +360,7 @@ vjs.on = function(elem, type, fn){
  * Removes event listeners from an element
  * @param  {Element|Object}   elem Object to remove listeners from
  * @param  {String|Array=}   type Type of listener to remove. Don't include to remove all events from element.
- * @param  {Function} fn   Specific listener to remove. Don't incldue to remove listeners for an event type.
+ * @param  {Function} fn   Specific listener to remove. Don't include to remove listeners for an event type.
  * @private
  */
 vjs.off = function(elem, type, fn) {
@@ -479,7 +479,7 @@ vjs.fixEvent = function(event) {
     for (var key in old) {
       // Safari 6.0.3 warns you if you try to copy deprecated layerX/Y
       // Chrome warns you if you try to copy deprecated keyboardEvent.keyLocation
-      if (key !== 'layerX' && key !== 'layerY' && key !== 'keyboardEvent.keyLocation') {
+      if (key !== 'layerX' && key !== 'layerY' && key !== 'keyLocation') {
         // Chrome 32+ warns if you try to copy deprecated returnValue, but
         // we still want to if preventDefault isn't supported (IE8).
         if (!(key == 'returnValue' && old.preventDefault)) {
@@ -973,13 +973,24 @@ vjs.isEmpty = function(obj) {
 };
 
 /**
+ * Check if an element has a CSS class
+ * @param {Element} element Element to check
+ * @param {String} classToCheck Classname to check
+ * @private
+ */
+vjs.hasClass = function(element, classToCheck){
+  return ((' ' + element.className + ' ').indexOf(' ' + classToCheck + ' ') !== -1);
+};
+
+
+/**
  * Add a CSS class name to an element
  * @param {Element} element    Element to add class name to
  * @param {String} classToAdd Classname to add
  * @private
  */
 vjs.addClass = function(element, classToAdd){
-  if ((' '+element.className+' ').indexOf(' '+classToAdd+' ') == -1) {
+  if (!vjs.hasClass(element, classToAdd)) {
     element.className = element.className === '' ? classToAdd : element.className + ' ' + classToAdd;
   }
 };
@@ -993,7 +1004,7 @@ vjs.addClass = function(element, classToAdd){
 vjs.removeClass = function(element, classToRemove){
   var classNames, i;
 
-  if (element.className.indexOf(classToRemove) == -1) { return; }
+  if (!vjs.hasClass(element, classToRemove)) {return;}
 
   classNames = element.className.split(' ');
 
@@ -1069,6 +1080,7 @@ vjs.IS_FIREFOX = (/Firefox/i).test(vjs.USER_AGENT);
 vjs.IS_CHROME = (/Chrome/i).test(vjs.USER_AGENT);
 
 vjs.TOUCH_ENABLED = !!(('ontouchstart' in window) || window.DocumentTouch && document instanceof window.DocumentTouch);
+vjs.BACKGROUND_SIZE_SUPPORTED = 'backgroundSize' in vjs.TEST_VID.style;
 
 /**
  * Apply attributes to an HTML element.
@@ -1651,8 +1663,14 @@ vjs.Component = vjs.CoreObject.extend({
     // Updated options with supplied options
     options = this.options(options);
 
-    // Get ID from options, element, or create using player ID and unique ID
-    this.id_ = options['id'] || ((options['el'] && options['el']['id']) ? options['el']['id'] : player.id() + '_component_' + vjs.guid++ );
+    // Get ID from options or options element if one is supplied
+    this.id_ = options['id'] || (options['el'] && options['el']['id']);
+
+    // If there was no ID from the options, generate one
+    if (!this.id_) {
+      // Don't require the player ID function in the case of mock players
+      this.id_ = ((player.id && player.id()) || 'no_player') + '_component_' + vjs.guid++;
+    }
 
     this.name_ = options['name'] || null;
 
@@ -1958,17 +1976,17 @@ vjs.Component.prototype.getChild = function(name){
  * @suppress {accessControls|checkRegExp|checkTypes|checkVars|const|constantProperty|deprecated|duplicate|es5Strict|fileoverviewTags|globalThis|invalidCasts|missingProperties|nonStandardJsDocs|strictModuleDepCheck|undefinedNames|undefinedVars|unknownDefines|uselessCode|visibility}
  */
 vjs.Component.prototype.addChild = function(child, options){
-  var component, componentClass, componentName, componentId;
+  var component, componentClass, componentName;
 
-  // If string, create new component with options
+  // If child is a string, create new component with options
   if (typeof child === 'string') {
-
     componentName = child;
 
     // Make sure options is at least an empty object to protect against errors
     options = options || {};
 
-    // Assume name of set is a lowercased name of the UI Class (PlayButton, etc.)
+    // If no componentClass in options, assume componentClass is the name lowercased
+    // (e.g. playButton)
     componentClass = options['componentClass'] || vjs.capitalize(componentName);
 
     // Set name through options
@@ -2077,36 +2095,51 @@ vjs.Component.prototype.removeChild = function(component){
  *
  */
 vjs.Component.prototype.initChildren = function(){
-  var parent, children, child, name, opts;
+  var parent, parentOptions, children, child, name, opts, handleAdd;
 
   parent = this;
-  children = this.options()['children'];
+  parentOptions = parent.options();
+  children = parentOptions['children'];
 
   if (children) {
+    handleAdd = function(name, opts){
+      // Allow options for children to be set at the parent options
+      // e.g. videojs(id, { controlBar: false });
+      // instead of videojs(id, { children: { controlBar: false });
+      if (parentOptions[name] !== undefined) {
+        opts = parentOptions[name];
+      }
+
+      // Allow for disabling default components
+      // e.g. vjs.options['children']['posterImage'] = false
+      if (opts === false) return;
+
+      // Create and add the child component.
+      // Add a direct reference to the child by name on the parent instance.
+      // If two of the same component are used, different names should be supplied
+      // for each
+      parent[name] = parent.addChild(name, opts);
+    };
+
     // Allow for an array of children details to passed in the options
     if (vjs.obj.isArray(children)) {
       for (var i = 0; i < children.length; i++) {
         child = children[i];
 
         if (typeof child == 'string') {
+          // ['myComponent']
           name = child;
           opts = {};
         } else {
+          // [{ name: 'myComponent', otherOption: true }]
           name = child.name;
           opts = child;
         }
 
-        parent[name] = parent.addChild(name, opts);
+        handleAdd(name, opts);
       }
     } else {
-      vjs.obj.each(children, function(name, opts){
-        // Allow for disabling default components
-        // e.g. vjs.options['children']['posterImage'] = false
-        if (opts === false) return;
-
-        // Set property name on player. Could cause conflicts with other prop names, but it's worth making refs easy.
-        parent[name] = parent.addChild(name, opts);
-      });
+      vjs.obj.each(children, handleAdd);
     }
   }
 };
@@ -2129,46 +2162,169 @@ vjs.Component.prototype.buildCSSClass = function(){
  * Add an event listener to this component's element
  *
  *     var myFunc = function(){
- *       var myPlayer = this;
+ *       var myComponent = this;
  *       // Do something when the event is fired
  *     };
  *
- *     myPlayer.on("eventName", myFunc);
+ *     myComponent.on('eventType', myFunc);
  *
- * The context will be the component.
+ * The context of myFunc will be myComponent unless previously bound.
  *
- * @param  {String}   type The event type e.g. 'click'
- * @param  {Function} fn   The event listener
- * @return {vjs.Component} self
+ * Alternatively, you can add a listener to another element or component.
+ *
+ *     myComponent.on(otherElement, 'eventName', myFunc);
+ *     myComponent.on(otherComponent, 'eventName', myFunc);
+ *
+ * The benefit of using this over `vjs.on(otherElement, 'eventName', myFunc)`
+ * and `otherComponent.on('eventName', myFunc)` is that this way the listeners
+ * will be automatically cleaned up when either component is diposed.
+ * It will also bind myComponent as the context of myFunc.
+ *
+ * **NOTE**: When using this on elements in the page other than window
+ * and document (both permanent), if you remove the element from the DOM
+ * you need to call `vjs.trigger(el, 'dispose')` on it to clean up
+ * references to it and allow the browser to garbage collect it.
+ *
+ * @param  {String|vjs.Component} first   The event type or other component
+ * @param  {Function|String}      second  The event handler or event type
+ * @param  {Function}             third   The event handler
+ * @return {vjs.Component}        self
  */
-vjs.Component.prototype.on = function(type, fn){
-  vjs.on(this.el_, type, vjs.bind(this, fn));
+vjs.Component.prototype.on = function(first, second, third){
+  var target, type, fn, removeOnDispose, cleanRemover, thisComponent;
+
+  if (typeof first === 'string' || vjs.obj.isArray(first)) {
+    vjs.on(this.el_, first, vjs.bind(this, second));
+
+  // Targeting another component or element
+  } else {
+    target = first;
+    type = second;
+    fn = vjs.bind(this, third);
+    thisComponent = this;
+
+    // When this component is disposed, remove the listener from the other component
+    removeOnDispose = function(){
+      thisComponent.off(target, type, fn);
+    };
+    // Use the same function ID so we can remove it later it using the ID
+    // of the original listener
+    removeOnDispose.guid = fn.guid;
+    this.on('dispose', removeOnDispose);
+
+    // If the other component is disposed first we need to clean the reference
+    // to the other component in this component's removeOnDispose listener
+    // Otherwise we create a memory leak.
+    cleanRemover = function(){
+      thisComponent.off('dispose', removeOnDispose);
+    };
+    // Add the same function ID so we can easily remove it later
+    cleanRemover.guid = fn.guid;
+
+    // Check if this is a DOM node
+    if (first.nodeName) {
+      // Add the listener to the other element
+      vjs.on(target, type, fn);
+      vjs.on(target, 'dispose', cleanRemover);
+
+    // Should be a component
+    // Not using `instanceof vjs.Component` because it makes mock players difficult
+    } else if (typeof first.on === 'function') {
+      // Add the listener to the other component
+      target.on(type, fn);
+      target.on('dispose', cleanRemover);
+    }
+  }
+
   return this;
 };
 
 /**
- * Remove an event listener from the component's element
+ * Remove an event listener from this component's element
  *
- *     myComponent.off("eventName", myFunc);
+ *     myComponent.off('eventType', myFunc);
  *
- * @param  {String=}   type Event type. Without type it will remove all listeners.
- * @param  {Function=} fn   Event listener. Without fn it will remove all listeners for a type.
+ * If myFunc is excluded, ALL listeners for the event type will be removed.
+ * If eventType is excluded, ALL listeners will be removed from the component.
+ *
+ * Alternatively you can use `off` to remove listeners that were added to other
+ * elements or components using `myComponent.on(otherComponent...`.
+ * In this case both the event type and listener function are REQUIRED.
+ *
+ *     myComponent.off(otherElement, 'eventType', myFunc);
+ *     myComponent.off(otherComponent, 'eventType', myFunc);
+ *
+ * @param  {String=|vjs.Component}  first  The event type or other component
+ * @param  {Function=|String}       second The listener function or event type
+ * @param  {Function=}              third  The listener for other component
  * @return {vjs.Component}
  */
-vjs.Component.prototype.off = function(type, fn){
-  vjs.off(this.el_, type, fn);
+vjs.Component.prototype.off = function(first, second, third){
+  var target, otherComponent, type, fn, otherEl;
+
+  if (!first || typeof first === 'string' || vjs.obj.isArray(first)) {
+    vjs.off(this.el_, first, second);
+  } else {
+    target = first;
+    type = second;
+    // Ensure there's at least a guid, even if the function hasn't been used
+    fn = vjs.bind(this, third);
+
+    // Remove the dispose listener on this component,
+    // which was given the same guid as the event listener
+    this.off('dispose', fn);
+
+    if (first.nodeName) {
+      // Remove the listener
+      vjs.off(target, type, fn);
+      // Remove the listener for cleaning the dispose listener
+      vjs.off(target, 'dispose', fn);
+    } else {
+      target.off(type, fn);
+      target.off('dispose', fn);
+    }
+  }
+
   return this;
 };
 
 /**
  * Add an event listener to be triggered only once and then removed
  *
- * @param  {String}   type Event type
- * @param  {Function} fn   Event listener
+ *     myComponent.one('eventName', myFunc);
+ *
+ * Alternatively you can add a listener to another element or component
+ * that will be triggered only once.
+ *
+ *     myComponent.one(otherElement, 'eventName', myFunc);
+ *     myComponent.one(otherComponent, 'eventName', myFunc);
+ *
+ * @param  {String|vjs.Component}  first   The event type or other component
+ * @param  {Function|String}       second  The listener function or event type
+ * @param  {Function=}             third   The listener function for other component
  * @return {vjs.Component}
  */
-vjs.Component.prototype.one = function(type, fn) {
-  vjs.one(this.el_, type, vjs.bind(this, fn));
+vjs.Component.prototype.one = function(first, second, third) {
+  var target, type, fn, thisComponent, newFunc;
+
+  if (typeof first === 'string' || vjs.obj.isArray(first)) {
+    vjs.one(this.el_, first, vjs.bind(this, second));
+  } else {
+    target = first;
+    type = second;
+    fn = vjs.bind(this, third);
+    thisComponent = this;
+
+    newFunc = function(){
+      thisComponent.off(target, type, newFunc);
+      fn.apply(this, arguments);
+    };
+    // Keep the same function ID so we can remove it later
+    newFunc.guid = fn.guid;
+
+    this.on(target, type, newFunc);
+  }
+
   return this;
 };
 
@@ -2266,6 +2422,16 @@ vjs.Component.prototype.triggerReady = function(){
 
 /* Display
 ============================================================================= */
+
+/**
+ * Check if a component's element has a CSS class name
+ *
+ * @param {String} classToCheck Classname to check
+ * @return {vjs.Component}
+ */
+vjs.Component.prototype.hasClass = function(classToCheck){
+  return vjs.hasClass(this.el_, classToCheck);
+};
 
 /**
  * Add a CSS class name to the component's element
@@ -2570,6 +2736,11 @@ vjs.Component.prototype.emitTapEvents = function(){
 vjs.Component.prototype.enableTouchActivity = function() {
   var report, touchHolding, touchEnd;
 
+  // Don't continue if the root player doesn't support reporting user activity
+  if (!this.player().reportUserActivity) {
+    return;
+  }
+
   // listener for reporting that the user is active
   report = vjs.bind(this.player(), this.player().reportUserActivity);
 
@@ -2701,17 +2872,25 @@ vjs.Slider = vjs.Component.extend({
     this.on('blur', this.onBlur);
     this.on('click', this.onClick);
 
-    this.player_.on('controlsvisible', vjs.bind(this, this.update));
-
-    player.on(this.playerEvent, vjs.bind(this, this.update));
+    this.on(player, 'controlsvisible', this.update);
+    this.on(player, this.playerEvent, this.update);
 
     this.boundEvents = {};
-
-
     this.boundEvents.move = vjs.bind(this, this.onMouseMove);
     this.boundEvents.end = vjs.bind(this, this.onMouseUp);
   }
 });
+
+vjs.Slider.prototype.dispose = function() {
+  vjs.off(document, 'mousemove', this.boundEvents.move, false);
+  vjs.off(document, 'mouseup', this.boundEvents.end, false);
+  vjs.off(document, 'touchmove', this.boundEvents.move, false);
+  vjs.off(document, 'touchend', this.boundEvents.end, false);
+
+  vjs.off(document, 'keyup', vjs.bind(this, this.onKeyPress));
+
+  vjs.Component.prototype.dispose.call(this);
+};
 
 vjs.Slider.prototype.createEl = function(type, props) {
   props = props || {};
@@ -2979,7 +3158,7 @@ vjs.MenuItem = vjs.Button.extend({
 vjs.MenuItem.prototype.createEl = function(type, props){
   return vjs.Button.prototype.createEl.call(this, 'li', vjs.obj.merge({
     className: 'vjs-menu-item',
-    innerHTML: this.options_['label']
+    innerHTML: this.localize(this.options_['label'])
   }, props));
 };
 
@@ -3128,7 +3307,6 @@ vjs.MenuButton.prototype.unpressButton = function(){
   this.menu.unlockShowing();
   this.el_.setAttribute('aria-pressed', false);
 };
-
 /**
  * Custom MediaError to mimic the HTML5 MediaError
  * @param {Number} code The media error code
@@ -3337,9 +3515,10 @@ vjs.Player = vjs.Component.extend({
     this.cache_ = {};
 
     // Set poster
-    this.poster_ = options['poster'];
+    this.poster_ = options['poster'] || '';
+
     // Set controls
-    this.controls_ = options['controls'];
+    this.controls_ = !!options['controls'];
     // Original tag settings stored in options
     // now remove immediately so native controls don't flash.
     // May be turned back on by HTML5 tech if nativeControlsForTouch is true
@@ -3348,6 +3527,9 @@ vjs.Player = vjs.Component.extend({
     // we don't want the player to report touch activity on itself
     // see enableTouchActivity in Component
     options.reportTouchActivity = false;
+
+    // Set isAudio based on whether or not an audio tag was used
+    this.isAudio(this.tag.nodeName.toLowerCase() === 'audio');
 
     // Run base component initializing with new options.
     // Builds the element through createEl()
@@ -3360,6 +3542,10 @@ vjs.Player = vjs.Component.extend({
       this.addClass('vjs-controls-enabled');
     } else {
       this.addClass('vjs-controls-disabled');
+    }
+
+    if (this.isAudio()) {
+      this.addClass('vjs-audio');
     }
 
     // TODO: Make this smarter. Toggle user state between touching/mousing
@@ -3452,12 +3638,24 @@ vjs.Player.prototype.dispose = function(){
 };
 
 vjs.Player.prototype.getTagSettings = function(tag){
-  var options = {
-    'sources': [],
-    'tracks': []
-  };
+  var tagOptions,
+      dataSetup,
+      options = {
+        'sources': [],
+        'tracks': []
+      };
 
-  vjs.obj.merge(options, vjs.getElementAttributes(tag));
+  tagOptions = vjs.getElementAttributes(tag);
+  dataSetup = tagOptions['data-setup'];
+
+  // Check if data-setup attr exists.
+  if (dataSetup !== null){
+    // Parse options JSON
+    // If empty string, make it a parsable json object.
+    vjs.obj.merge(tagOptions, vjs.JSON.parse(dataSetup || '{}'));
+  }
+
+  vjs.obj.merge(options, tagOptions);
 
   // Get tag children settings
   if (tag.hasChildNodes()) {
@@ -3517,7 +3715,13 @@ vjs.Player.prototype.createEl = function(){
   // ID will now reference player box, not the video tag
   attrs = vjs.getElementAttributes(tag);
   vjs.obj.each(attrs, function(attr) {
-    el.setAttribute(attr, attrs[attr]);
+    // workaround so we don't totally break IE7
+    // http://stackoverflow.com/questions/3653444/css-styles-not-applied-on-dynamic-elements-in-internet-explorer-7
+    if (attr == 'class') {
+      el.className = attrs[attr];
+    } else {
+      el.setAttribute(attr, attrs[attr]);
+    }
   });
 
   // Update tag id/class for use as HTML5 playback tech
@@ -3535,6 +3739,10 @@ vjs.Player.prototype.createEl = function(){
   // Enforce with CSS since width/height attrs don't work on divs
   this.width(this.options_['width'], true); // (true) Skip resize listener on load
   this.height(this.options_['height'], true);
+
+  // vjs.insertFirst seems to cause the networkState to flicker from 3 to 2, so
+  // keep track of the original for later so we can know if the source originally failed
+  tag.initNetworkState_ = tag.networkState;
 
   // Wrap video tag in div (el/box) container
   if (tag.parentNode) {
@@ -3716,6 +3924,7 @@ vjs.Player.prototype.onWaiting = function(){
 /**
  * A handler for events that signal that waiting has eneded
  * which is not consistent between browsers. See #1351
+ * @private
  */
 vjs.Player.prototype.onWaitEnd = function(){
   this.removeClass('vjs-waiting');
@@ -3768,7 +3977,7 @@ vjs.Player.prototype.onPause = function(){
 /**
  * Fired when the current playback position has changed
  *
- * During playback this is fired every 15-250 milliseconds, depnding on the
+ * During playback this is fired every 15-250 milliseconds, depending on the
  * playback technology in use.
  * @event timeupdate
  */
@@ -3994,7 +4203,14 @@ vjs.Player.prototype.duration = function(seconds){
   return this.cache_.duration || 0;
 };
 
-// Calculates how much time is left. Not in spec, but useful.
+/**
+ * Calculates how much time is left.
+ *
+ *     var timeLeft = myPlayer.remainingTime();
+ *
+ * Not a native video element function, but useful
+ * @return {Number} The time remaining in seconds
+ */
 vjs.Player.prototype.remainingTime = function(){
   return this.duration() - this.currentTime();
 };
@@ -4466,14 +4682,20 @@ vjs.Player.prototype.sourceList_ = function(sources){
   }
 };
 
-// Begin loading the src data
-// http://dev.w3.org/html5/spec/video.html#dom-media-load
+/**
+ * Begin loading the src data.
+ * @return {vjs.Player} Returns the player
+ */
 vjs.Player.prototype.load = function(){
   this.techCall('load');
   return this;
 };
 
-// http://dev.w3.org/html5/spec/video.html#dom-media-currentsrc
+/**
+ * Returns the fully qualified URL of the current source value e.g. http://mysite.com/video.mp4
+ * Can be used in conjuction with `currentType` to assist in rebuilding the current source object.
+ * @return {String} The current source
+ */
 vjs.Player.prototype.currentSrc = function(){
   return this.techGet('currentSrc') || this.cache_.src || '';
 };
@@ -4488,7 +4710,11 @@ vjs.Player.prototype.currentType = function(){
     return this.currentType_ || '';
 };
 
-// Attributes/Options
+/**
+ * Get or set the preload attribute.
+ * @return {String} The preload attribute value when getting
+ * @return {vjs.Player} Returns the player when setting
+ */
 vjs.Player.prototype.preload = function(value){
   if (value !== undefined) {
     this.techCall('setPreload', value);
@@ -4497,6 +4723,12 @@ vjs.Player.prototype.preload = function(value){
   }
   return this.techGet('preload');
 };
+
+/**
+ * Get or set the autoplay attribute.
+ * @return {String} The autoplay attribute value when getting
+ * @return {vjs.Player} Returns the player when setting
+ */
 vjs.Player.prototype.autoplay = function(value){
   if (value !== undefined) {
     this.techCall('setAutoplay', value);
@@ -4505,6 +4737,12 @@ vjs.Player.prototype.autoplay = function(value){
   }
   return this.techGet('autoplay', value);
 };
+
+/**
+ * Get or set the loop attribute on the video element.
+ * @return {String} The loop attribute value when getting
+ * @return {vjs.Player} Returns the player when setting
+ */
 vjs.Player.prototype.loop = function(value){
   if (value !== undefined) {
     this.techCall('setLoop', value);
@@ -4541,6 +4779,12 @@ vjs.Player.prototype.poster = function(src){
     return this.poster_;
   }
 
+  // The correct way to remove a poster is to set as an empty string
+  // other falsey values will throw errors
+  if (!src) {
+    src = '';
+  }
+
   // update the internal poster variable
   this.poster_ = src;
 
@@ -4549,6 +4793,8 @@ vjs.Player.prototype.poster = function(src){
 
   // alert components that the poster has been set
   this.trigger('posterchange');
+
+  return this;
 };
 
 /**
@@ -4680,7 +4926,16 @@ vjs.Player.prototype.error = function(err){
   return this;
 };
 
+/**
+ * Returns whether or not the player is in the "ended" state.
+ * @return {Boolean} True if the player is in the ended state, false if not.
+ */
 vjs.Player.prototype.ended = function(){ return this.techGet('ended'); };
+
+/**
+ * Returns whether or not the player is in the "seeking" state.
+ * @return {Boolean} True if the player is in the seeking state, false if not.
+ */
 vjs.Player.prototype.seeking = function(){ return this.techGet('seeking'); };
 
 // When the player is first initialized, trigger activity so components
@@ -4817,6 +5072,12 @@ vjs.Player.prototype.listenForUserActivity = function(){
   });
 };
 
+/**
+ * Gets or sets the current playback rate.
+ * @param  {Boolean} rate   New playback rate to set.
+ * @return {Number}         Returns the new playback rate when setting
+ * @return {Number}         Returns the current playback rate when getting
+ */
 vjs.Player.prototype.playbackRate = function(rate) {
   if (rate !== undefined) {
     this.techCall('setPlaybackRate', rate);
@@ -4829,6 +5090,30 @@ vjs.Player.prototype.playbackRate = function(rate) {
     return 1.0;
   }
 
+};
+
+/**
+ * Store the current audio state
+ * @type {Boolean}
+ * @private
+ */
+vjs.Player.prototype.isAudio_ = false;
+
+/**
+ * Gets or sets the audio flag
+ *
+ * @param  {Boolean} bool    True signals that this is an audio player.
+ * @return {Boolean}         Returns true if player is audio, false if not when getting
+ * @return {vjs.Player}      Returns the player if setting
+ * @private
+ */
+vjs.Player.prototype.isAudio = function(bool) {
+  if (bool !== undefined) {
+    this.isAudio_ = !!bool;
+    return this;
+  }
+
+  return this.isAudio_;
 };
 
 // Methods to add support for
@@ -4923,8 +5208,8 @@ vjs.PlayToggle = vjs.Button.extend({
   init: function(player, options){
     vjs.Button.call(this, player, options);
 
-    player.on('play', vjs.bind(this, this.onPlay));
-    player.on('pause', vjs.bind(this, this.onPause));
+    this.on(player, 'play', this.onPlay);
+    this.on(player, 'pause', this.onPause);
   }
 });
 
@@ -4945,15 +5230,15 @@ vjs.PlayToggle.prototype.onClick = function(){
 
   // OnPlay - Add the vjs-playing class to the element so it can change appearance
 vjs.PlayToggle.prototype.onPlay = function(){
-  vjs.removeClass(this.el_, 'vjs-paused');
-  vjs.addClass(this.el_, 'vjs-playing');
+  this.removeClass('vjs-paused');
+  this.addClass('vjs-playing');
   this.el_.children[0].children[0].innerHTML = this.localize('Pause'); // change the button text to "Pause"
 };
 
   // OnPause - Add the vjs-paused class to the element so it can change appearance
 vjs.PlayToggle.prototype.onPause = function(){
-  vjs.removeClass(this.el_, 'vjs-playing');
-  vjs.addClass(this.el_, 'vjs-paused');
+  this.removeClass('vjs-playing');
+  this.addClass('vjs-paused');
   this.el_.children[0].children[0].innerHTML = this.localize('Play'); // change the button text to "Play"
 };
 /**
@@ -4967,7 +5252,7 @@ vjs.CurrentTimeDisplay = vjs.Component.extend({
   init: function(player, options){
     vjs.Component.call(this, player, options);
 
-    player.on('timeupdate', vjs.bind(this, this.updateContent));
+    this.on(player, 'timeupdate', this.updateContent);
   }
 });
 
@@ -5008,7 +5293,7 @@ vjs.DurationDisplay = vjs.Component.extend({
     // so the value cannot be written out using this method.
     // Once the order of durationchange and this.player_.duration() being set is figured out,
     // this can be updated.
-    player.on('timeupdate', vjs.bind(this, this.updateContent));
+    this.on(player, 'timeupdate', this.updateContent);
   }
 });
 
@@ -5068,7 +5353,7 @@ vjs.RemainingTimeDisplay = vjs.Component.extend({
   init: function(player, options){
     vjs.Component.call(this, player, options);
 
-    player.on('timeupdate', vjs.bind(this, this.updateContent));
+    this.on(player, 'timeupdate', this.updateContent);
   }
 });
 
@@ -5167,7 +5452,7 @@ vjs.SeekBar = vjs.Slider.extend({
   /** @constructor */
   init: function(player, options){
     vjs.Slider.call(this, player, options);
-    player.on('timeupdate', vjs.bind(this, this.updateARIAAttributes));
+    this.on(player, 'timeupdate', this.updateARIAAttributes);
     player.ready(vjs.bind(this, this.updateARIAAttributes));
   }
 });
@@ -5249,7 +5534,7 @@ vjs.LoadProgressBar = vjs.Component.extend({
   /** @constructor */
   init: function(player, options){
     vjs.Component.call(this, player, options);
-    player.on('progress', vjs.bind(this, this.update));
+    this.on(player, 'progress', this.update);
   }
 });
 
@@ -5328,7 +5613,7 @@ vjs.PlayProgressBar.prototype.createEl = function(){
 vjs.SeekHandle = vjs.SliderHandle.extend({
   init: function(player, options) {
     vjs.SliderHandle.call(this, player, options);
-    player.on('timeupdate', vjs.bind(this, this.updateContent));
+    this.on(player, 'timeupdate', this.updateContent);
   }
 });
 
@@ -5368,13 +5653,13 @@ vjs.VolumeControl = vjs.Component.extend({
     if (player.tech && player.tech['featuresVolumeControl'] === false) {
       this.addClass('vjs-hidden');
     }
-    player.on('loadstart', vjs.bind(this, function(){
+    this.on(player, 'loadstart', function(){
       if (player.tech['featuresVolumeControl'] === false) {
         this.addClass('vjs-hidden');
       } else {
         this.removeClass('vjs-hidden');
       }
-    }));
+    });
   }
 });
 
@@ -5401,7 +5686,7 @@ vjs.VolumeBar = vjs.Slider.extend({
   /** @constructor */
   init: function(player, options){
     vjs.Slider.call(this, player, options);
-    player.on('volumechange', vjs.bind(this, this.updateARIAAttributes));
+    this.on(player, 'volumechange', this.updateARIAAttributes);
     player.ready(vjs.bind(this, this.updateARIAAttributes));
   }
 });
@@ -5504,19 +5789,20 @@ vjs.MuteToggle = vjs.Button.extend({
   init: function(player, options){
     vjs.Button.call(this, player, options);
 
-    player.on('volumechange', vjs.bind(this, this.update));
+    this.on(player, 'volumechange', this.update);
 
     // hide mute toggle if the current tech doesn't support volume control
     if (player.tech && player.tech['featuresVolumeControl'] === false) {
       this.addClass('vjs-hidden');
     }
-    player.on('loadstart', vjs.bind(this, function(){
+
+    this.on(player, 'loadstart', function(){
       if (player.tech['featuresVolumeControl'] === false) {
         this.addClass('vjs-hidden');
       } else {
         this.removeClass('vjs-hidden');
       }
-    }));
+    });
   }
 });
 
@@ -5572,19 +5858,19 @@ vjs.VolumeMenuButton = vjs.MenuButton.extend({
     vjs.MenuButton.call(this, player, options);
 
     // Same listeners as MuteToggle
-    player.on('volumechange', vjs.bind(this, this.update));
+    this.on(player, 'volumechange', this.update);
 
     // hide mute toggle if the current tech doesn't support volume control
     if (player.tech && player.tech['featuresVolumeControl'] === false) {
       this.addClass('vjs-hidden');
     }
-    player.on('loadstart', vjs.bind(this, function(){
+    this.on(player, 'loadstart', function(){
       if (player.tech['featuresVolumeControl'] === false) {
         this.addClass('vjs-hidden');
       } else {
         this.removeClass('vjs-hidden');
       }
-    }));
+    });
     this.addClass('vjs-menu-button');
   }
 });
@@ -5593,7 +5879,13 @@ vjs.VolumeMenuButton.prototype.createMenu = function(){
   var menu = new vjs.Menu(this.player_, {
     contentElType: 'div'
   });
-  var vc = new vjs.VolumeBar(this.player_, vjs.obj.merge({'vertical': true}, this.options_.volumeBar));
+  var vc = new vjs.VolumeBar(this.player_, this.options_['volumeBar']);
+  vc.on('focus', function() {
+    menu.lockShowing();
+  });
+  vc.on('blur', function() {
+    menu.unlockShowing();
+  });
   menu.addChild(vc);
   return menu;
 };
@@ -5625,8 +5917,8 @@ vjs.PlaybackRateMenuButton = vjs.MenuButton.extend({
     this.updateVisibility();
     this.updateLabel();
 
-    player.on('loadstart', vjs.bind(this, this.updateVisibility));
-    player.on('ratechange', vjs.bind(this, this.updateLabel));
+    this.on(player, 'loadstart', this.updateVisibility);
+    this.on(player, 'ratechange', this.updateLabel);
   }
 });
 
@@ -5727,7 +6019,7 @@ vjs.PlaybackRateMenuItem = vjs.MenuItem.extend({
     options['selected'] = rate === 1;
     vjs.MenuItem.call(this, player, options);
 
-    this.player().on('ratechange', vjs.bind(this, this.update));
+    this.on(player, 'ratechange', this.update);
   }
 });
 
@@ -5753,25 +6045,23 @@ vjs.PosterImage = vjs.Button.extend({
   init: function(player, options){
     vjs.Button.call(this, player, options);
 
-    if (player.poster()) {
-      this.src(player.poster());
-    }
-
-    if (!player.poster() || !player.controls()) {
-      this.hide();
-    }
-
-    player.on('posterchange', vjs.bind(this, function(){
-      this.src(player.poster());
-    }));
-
-    player.on('play', vjs.bind(this, this.hide));
+    this.update();
+    player.on('posterchange', vjs.bind(this, this.update));
   }
 });
 
-// use the test el to check for backgroundSize style support
-var _backgroundSizeSupported = 'backgroundSize' in vjs.TEST_VID.style;
+/**
+ * Clean up the poster image
+ */
+vjs.PosterImage.prototype.dispose = function(){
+  this.player().off('posterchange', this.update);
+  vjs.Button.prototype.dispose.call(this);
+};
 
+/**
+ * Create the poster image element
+ * @return {Element}
+ */
 vjs.PosterImage.prototype.createEl = function(){
   var el = vjs.createEl('div', {
     className: 'vjs-poster',
@@ -5780,42 +6070,65 @@ vjs.PosterImage.prototype.createEl = function(){
     tabIndex: -1
   });
 
-  if (!_backgroundSizeSupported) {
-    // setup an img element as a fallback for IE8
-    el.appendChild(vjs.createEl('img'));
+  // To ensure the poster image resizes while maintaining its original aspect
+  // ratio, use a div with `background-size` when available. For browsers that
+  // do not support `background-size` (e.g. IE8), fall back on using a regular
+  // img element.
+  if (!vjs.BACKGROUND_SIZE_SUPPORTED) {
+    this.fallbackImg_ = vjs.createEl('img');
+    el.appendChild(this.fallbackImg_);
   }
 
   return el;
 };
 
-vjs.PosterImage.prototype.src = function(url){
-  var el = this.el();
+/**
+ * Event handler for updates to the player's poster source
+ */
+vjs.PosterImage.prototype.update = function(){
+  var url = this.player().poster();
 
-  // getter
-  // can't think of a need for a getter here
-  // see #838 if on is needed in the future
-  // still don't want a getter to set src as undefined
-  if (url === undefined) {
-    return;
-  }
+  this.setSrc(url);
 
-  // setter
-  // To ensure the poster image resizes while maintaining its original aspect
-  // ratio, use a div with `background-size` when available. For browsers that
-  // do not support `background-size` (e.g. IE8), fall back on using a regular
-  // img element.
-  if (_backgroundSizeSupported) {
-    el.style.backgroundImage = 'url("' + url + '")';
+  // If there's no poster source we should display:none on this component
+  // so it's not still clickable or right-clickable
+  if (url) {
+    // Remove the display style property that hide() adds
+    // as opposed to show() which sets display to block
+    // In the future it might be worth creating an `unhide` component method
+    this.el_.style.display = '';
   } else {
-    el.firstChild.src = url;
+    this.hide();
   }
 };
 
-vjs.PosterImage.prototype.onClick = function(){
-  // Only accept clicks when controls are enabled
-  if (this.player().controls()) {
-    this.player_.play();
+/**
+ * Set the poster source depending on the display method
+ */
+vjs.PosterImage.prototype.setSrc = function(url){
+  var backgroundImage;
+
+  if (this.fallbackImg_) {
+    this.fallbackImg_.src = url;
+  } else {
+    backgroundImage = '';
+    // Any falsey values should stay as an empty string, otherwise
+    // this will throw an extra error
+    if (url) {
+      backgroundImage = 'url("' + url + '")';
+    }
+
+    this.el_.style.backgroundImage = backgroundImage;
   }
+};
+
+/**
+ * Event handler for clicks on the poster image
+ */
+vjs.PosterImage.prototype.onClick = function(){
+  // We don't want a click to trigger playback when controls are disabled
+  // but CSS should be hiding the poster to prevent that from happening
+  this.player_.play();
 };
 /* Loading Spinner
 ================================================================================ */
@@ -5892,7 +6205,7 @@ vjs.ErrorDisplay = vjs.Component.extend({
     vjs.Component.call(this, player, options);
 
     this.update();
-    player.on('error', vjs.bind(this, this.update));
+    this.on(player, 'error', this.update);
   }
 });
 
@@ -5967,24 +6280,21 @@ vjs.MediaTechController = vjs.Component.extend({
  * any controls will still keep the user active
  */
 vjs.MediaTechController.prototype.initControlsListeners = function(){
-  var player, tech, activateControls, deactivateControls;
+  var player, activateControls;
 
-  tech = this;
   player = this.player();
 
-  var activateControls = function(){
+  activateControls = function(){
     if (player.controls() && !player.usingNativeControls()) {
-      tech.addControlsListeners();
+      this.addControlsListeners();
     }
   };
-
-  deactivateControls = vjs.bind(tech, tech.removeControlsListeners);
 
   // Set up event listeners once the tech is ready and has an element to apply
   // listeners to
   this.ready(activateControls);
-  player.on('controlsenabled', activateControls);
-  player.on('controlsdisabled', deactivateControls);
+  this.on(player, 'controlsenabled', activateControls);
+  this.on(player, 'controlsdisabled', this.removeControlsListeners);
 
   // if we're loading the playback object after it has started loading or playing the
   // video (often with autoplay on) then the loadstart event has already fired and we
@@ -6115,10 +6425,12 @@ vjs.MediaTechController.prototype.stopTrackingProgress = function(){ clearInterv
 
 /*! Time Tracking -------------------------------------------------------------- */
 vjs.MediaTechController.prototype.manualTimeUpdatesOn = function(){
+  var player = this.player_;
+
   this.manualTimeUpdates = true;
 
-  this.player().on('play', vjs.bind(this, this.trackCurrentTime));
-  this.player().on('pause', vjs.bind(this, this.stopTrackingCurrentTime));
+  this.on(player, 'play', this.trackCurrentTime);
+  this.on(player, 'pause', this.stopTrackingCurrentTime);
   // timeupdate is also called by .currentTime whenever current time is set
 
   // Watch for native timeupdate event
@@ -6221,8 +6533,11 @@ vjs.Html5 = vjs.MediaTechController.extend({
 
     var source = options['source'];
 
-    // set the source if one was provided
-    if (source && this.el_.currentSrc !== source.src) {
+    // Set the source if one is provided
+    // 1) Check if the source is new (if not, we want to keep the original so playback isn't interrupted)
+    // 2) Check to see if the network state of the tag was failed at init, and if so, reset the source
+    // anyway so the error gets fired.
+    if (source && (this.el_.currentSrc !== source.src) || (player.tag && player.tag.initNetworkState_ === 3)) {
       this.el_.src = source.src;
     }
 
@@ -6230,7 +6545,7 @@ vjs.Html5 = vjs.MediaTechController.extend({
     // Our goal should be to get the custom controls on mobile solid everywhere
     // so we can remove this all together. Right now this will block custom
     // controls on touch enabled laptops like the Chrome Pixel
-    if (vjs.TOUCH_ENABLED && player.options()['nativeControlsForTouch'] !== false) {
+    if (vjs.TOUCH_ENABLED && player.options()['nativeControlsForTouch'] === true) {
       this.useNativeControls();
     }
 
@@ -6307,7 +6622,7 @@ vjs.Html5.prototype.createEl = function(){
 // Triggers removed using this.off when disposed
 vjs.Html5.prototype.setupTriggers = function(){
   for (var i = vjs.Html5.Events.length - 1; i >= 0; i--) {
-    vjs.on(this.el_, vjs.Html5.Events[i], vjs.bind(this, this.eventHandler));
+    this.on(vjs.Html5.Events[i], this.eventHandler);
   }
 };
 
@@ -6398,6 +6713,20 @@ vjs.Html5.prototype.supportsFullScreen = function(){
 
 vjs.Html5.prototype.enterFullScreen = function(){
   var video = this.el_;
+
+  if ('webkitDisplayingFullscreen' in video) {
+    this.one('webkitbeginfullscreen', function() {
+      this.player_.isFullscreen(true);
+
+      this.one('webkitendfullscreen', function() {
+        this.player_.isFullscreen(false);
+        this.player_.trigger('fullscreenchange');
+      });
+
+      this.player_.trigger('fullscreenchange');
+    });
+  }
+
   if (video.paused && video.networkState <= video.HAVE_METADATA) {
     // attempt to prime the video element for programmatic access
     // this isn't necessary on the desktop but shouldn't hurt
@@ -6664,10 +6993,10 @@ vjs.Flash = vjs.MediaTechController.extend({
     // bugzilla bug: https://bugzilla.mozilla.org/show_bug.cgi?id=836786
     if (vjs.IS_FIREFOX) {
       this.ready(function(){
-        vjs.on(this.el(), 'mousemove', vjs.bind(this, function(){
+        this.on('mousemove', function(){
           // since it's a custom event, don't bubble higher than the player
           this.player().trigger({ 'type':'mousemove', 'bubbles': false });
-        }));
+        });
       });
     }
 
@@ -7202,8 +7531,6 @@ vjs.TextTrack = vjs.Component.extend({
     this.activeCues_ = [];
     this.readyState_ = 0;
     this.mode_ = 0;
-
-    this.player_.on('fullscreenchange', vjs.bind(this, this.adjustFontSize));
   }
 });
 
@@ -7359,22 +7686,6 @@ vjs.TextTrack.prototype.mode_;
  */
 vjs.TextTrack.prototype.mode = function(){
   return this.mode_;
-};
-
-/**
- * Change the font size of the text track to make it larger when playing in fullscreen mode
- * and restore it to its normal size when not in fullscreen mode.
- */
-vjs.TextTrack.prototype.adjustFontSize = function(){
-    if (this.player_.isFullscreen()) {
-        // Scale the font by the same factor as increasing the video width to the full screen window width.
-        // Additionally, multiply that factor by 1.4, which is the default font size for
-        // the caption track (from the CSS)
-        this.el_.style.fontSize = screen.width / this.player_.width() * 1.4 * 100 + '%';
-    } else {
-        // Change the font size of the text track back to its original non-fullscreen size
-        this.el_.style.fontSize = '';
-    }
 };
 
 /**
@@ -7804,7 +8115,7 @@ vjs.TextTrackMenuItem = vjs.MenuItem.extend({
     options['selected'] = track.dflt();
     vjs.MenuItem.call(this, player, options);
 
-    this.player_.on(track.kind() + 'trackchange', vjs.bind(this, this.update));
+    this.on(player, track.kind() + 'trackchange', this.update);
   }
 });
 
@@ -8106,7 +8417,7 @@ vjs.obj.merge(vjs.ControlBar.prototype.options_['children'], {
  */
 vjs.JSON;
 
-if (typeof window.JSON !== 'undefined' && window.JSON.parse === 'function') {
+if (typeof window.JSON !== 'undefined' && typeof window.JSON.parse === 'function') {
   vjs.JSON = window.JSON;
 
 } else {
@@ -8171,33 +8482,48 @@ if (typeof window.JSON !== 'undefined' && window.JSON.parse === 'function') {
 
 // Automatically set up any tags that have a data-setup attribute
 vjs.autoSetup = function(){
-  var options, vid, player,
-      vids = document.getElementsByTagName('video');
+  var options, mediaEl, player, i, e;
+
+  // One day, when we stop supporting IE8, go back to this, but in the meantime...*hack hack hack*
+  // var vids = Array.prototype.slice.call(document.getElementsByTagName('video'));
+  // var audios = Array.prototype.slice.call(document.getElementsByTagName('audio'));
+  // var mediaEls = vids.concat(audios);
+
+  // Because IE8 doesn't support calling slice on a node list, we need to loop through each list of elements
+  // to build up a new, combined list of elements.
+  var vids = document.getElementsByTagName('video');
+  var audios = document.getElementsByTagName('audio');
+  var mediaEls = [];
+  if (vids && vids.length > 0) {
+    for(i=0, e=vids.length; i<e; i++) {
+      mediaEls.push(vids[i]);
+    }
+  }
+  if (audios && audios.length > 0) {
+    for(i=0, e=audios.length; i<e; i++) {
+      mediaEls.push(audios[i]);
+    }
+  }
 
   // Check if any media elements exist
-  if (vids && vids.length > 0) {
+  if (mediaEls && mediaEls.length > 0) {
 
-    for (var i=0,j=vids.length; i<j; i++) {
-      vid = vids[i];
+    for (i=0,e=mediaEls.length; i<e; i++) {
+      mediaEl = mediaEls[i];
 
       // Check if element exists, has getAttribute func.
       // IE seems to consider typeof el.getAttribute == 'object' instead of 'function' like expected, at least when loading the player immediately.
-      if (vid && vid.getAttribute) {
+      if (mediaEl && mediaEl.getAttribute) {
 
         // Make sure this player hasn't already been set up.
-        if (vid['player'] === undefined) {
-          options = vid.getAttribute('data-setup');
+        if (mediaEl['player'] === undefined) {
+          options = mediaEl.getAttribute('data-setup');
 
           // Check if data-setup attr exists.
           // We only auto-setup if they've added the data-setup attr.
           if (options !== null) {
-
-            // Parse options JSON
-            // If empty string, make it a parsable json object.
-            options = vjs.JSON.parse(options || '{}');
-
             // Create new video.js instance.
-            player = videojs(vid, options);
+            player = videojs(mediaEl);
           }
         }
 
