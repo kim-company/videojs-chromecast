@@ -23,8 +23,8 @@ module.exports = ->
           "dist/videojs.chromecast.js": [
             "lang/*"
             "src/videojs.chromecast.coffee"
-            "src/videojs.chromecastComponent.coffee"
-            "src/videojs.chromecastTech.coffee"
+            "src/videojs.chromecast-component.coffee"
+            "src/videojs.chromecast-tech.coffee"
           ]
 
     uglify:
