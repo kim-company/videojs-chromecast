@@ -1,0 +1,22 @@
+{
+  "name": "videojs-chromecast",
+  "version": "1.0.0",
+  "homepage": "https://github.com/kim-company/videojs-chromecast",
+  "author": {
+    "name": "KIM Keep In Mind GmbH, srl",
+    "email": "info@keepinmind.info"
+  },
+  "description": "Videojs plugin for chromecast",
+  "main": [
+      "dist/videojs.chromecast.min.js",
+      "dist/videojs.chromecast.min.css"
+  ],
+  "license": "MIT",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ]
+}
