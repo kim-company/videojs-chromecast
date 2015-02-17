@@ -1,6 +1,6 @@
-/*! videojs-chromecast - v1.0.0 - 2014-09-22
+/*! videojs-chromecast - v1.0.0 - 2015-02-16
 * https://github.com/kim-company/videojs-chromecast
-* Copyright (c) 2014 KIM Keep In Mind GmbH, srl; Licensed MIT */
+* Copyright (c) 2015 KIM Keep In Mind GmbH, srl; Licensed MIT */
 
 (function() {
   var __hasProp = {}.hasOwnProperty,
@@ -104,7 +104,7 @@
       vjs.log("Session initialized: " + session.sessionId);
       this.apiSession = session;
       this.addClass("connected");
-      mediaInfo = new chrome.cast.media.MediaInfo(this.player_.currentSrc(), "video/mp4");
+      mediaInfo = new chrome.cast.media.MediaInfo(this.player_.currentSrc(), this.player_.currentType());
       if (this.settings.metadata) {
         mediaInfo.metadata = new chrome.cast.media.GenericMediaMetadata();
         if (this.settings.metadata.title) {
@@ -300,7 +300,7 @@
     };
 
     ChromecastTech.canPlaySource = function(source) {
-      return source.type === "video/mp4";
+      return source.type === "video/mp4" || source.type === "video/webm" || source.type === "application/x-mpegURL" || source.type === "application/vnd.apple.mpegURL";
     };
 
     function ChromecastTech(player, options, ready) {

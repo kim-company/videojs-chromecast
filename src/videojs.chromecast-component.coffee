@@ -69,7 +69,7 @@ class vjs.ChromecastComponent extends vjs.Button
     @apiSession = session
     @addClass "connected"
 
-    mediaInfo = new chrome.cast.media.MediaInfo(@player_.currentSrc(), "video/mp4");
+    mediaInfo = new chrome.cast.media.MediaInfo(@player_.currentSrc(), @player_.currentType());
 
     if @settings.metadata
       mediaInfo.metadata = new chrome.cast.media.GenericMediaMetadata();
