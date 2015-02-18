@@ -24,8 +24,6 @@ class vjs.ChromecastTech extends vjs.MediaTechController
     vjs.insertFirst @el_, @player_.el()
     @triggerReady()
 
-  dispose: ->
-    vjs.MediaTechController::dispose.call this
 
   ###
   MEDIA PLAYER EVENTS
