@@ -16,7 +16,7 @@ class vjs.ChromecastTech extends vjs.MediaTechController
 
     @receiver = options.source.receiver
 
-    vjs.MediaTechController.call this, player, options, ready
+    super player, options, ready
 
     @triggerReady()
 
