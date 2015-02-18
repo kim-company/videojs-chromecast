@@ -1,4 +1,4 @@
-/*! videojs-chromecast - v1.0.0 - 2015-02-16
+/*! videojs-chromecast - v1.0.0 - 2015-02-18
 * https://github.com/kim-company/videojs-chromecast
 * Copyright (c) 2015 KIM Keep In Mind GmbH, srl; Licensed MIT */
 
@@ -258,29 +258,18 @@
       this.casting = false;
       this.removeClass("connected");
       this.player_.src(this.player_.options_["sources"]);
-      vjs.insertFirst(this.player_.tech.el_, this.player_.el());
       this.player_.tech.setControls(false);
       this.player_.options_.inactivityTimeout = this.inactivityTimeout;
-      this.player_.ready(function() {
-        this.player_.currentTime(this.currentMediaTime);
-        if (!this.paused) {
-          return this.player_.play();
-        }
-      });
       this.apiMedia = null;
       return this.apiSession = null;
     };
 
     ChromecastComponent.prototype.buildCSSClass = function() {
-      return "vjs-chromecast-button " + (vjs.Button.prototype.buildCSSClass.call(this));
-    };
-
-    ChromecastComponent.prototype.createEl = function(type, props) {
-      return vjs.Button.prototype.createEl.call(this, "div");
+      return ChromecastComponent.__super__.buildCSSClass.apply(this, arguments) + "vjs-chromecast-button";
     };
 
     ChromecastComponent.prototype.onClick = function() {
-      vjs.Button.prototype.onClick.call(this);
+      ChromecastComponent.__super__.onClick.apply(this, arguments);
       if (this.casting) {
         return this.stopCasting();
       } else {
@@ -304,22 +293,24 @@
     };
 
     function ChromecastTech(player, options, ready) {
-      this["featuresVolumeControl"] = true;
-      this["movingMediaElementInDOM"] = false;
-      this["featuresFullscreenResize"] = false;
-      this["featuresProgressEvents"] = true;
+      this.featuresVolumeControl = true;
+      this.movingMediaElementInDOM = false;
+      this.featuresFullscreenResize = false;
+      this.featuresProgressEvents = true;
+      this.receiver = options.source.receiver;
       vjs.MediaTechController.call(this, player, options, ready);
-      this.el_ = videojs.Component.prototype.createEl("div", {
-        id: "" + this.player_.id_ + "_chromecast_api",
-        className: "vjs-tech vjs-tech-chromecast",
-        innerHTML: "<div class=\"casting-image\" style=\"background-image: url('" + this.player_.options_.poster + "')\"></div><div class=\"casting-overlay\"><div class=\"casting-information\"><div class=\"casting-icon\">&#58880</div><div class=\"casting-description\"><small>" + (this.localize("CASTING TO")) + "</small><br>" + options.source.receiver + "</div></div>"
-      });
-      vjs.insertFirst(this.el_, this.player_.el());
       this.triggerReady();
     }
 
-    ChromecastTech.prototype.dispose = function() {
-      return vjs.MediaTechController.prototype.dispose.call(this);
+    ChromecastTech.prototype.createEl = function() {
+      var element;
+      element = document.createElement("div");
+      element.id = "" + this.player_.id_ + "_chromecast_api";
+      element.className = "vjs-tech vjs-tech-chromecast";
+      element.innerHTML = "<div class=\"casting-image\" style=\"background-image: url('" + this.player_.options_.poster + "')\"></div>\n<div class=\"casting-overlay\">\n  <div class=\"casting-information\">\n    <div class=\"casting-icon\">&#58880</div>\n    <div class=\"casting-description\"><small>" + (this.localize("CASTING TO")) + "</small><br>" + this.receiver + "</div>\n  </div>\n</div>";
+      element.player = this.player_;
+      vjs.insertFirst(element, this.player_.el());
+      return element;
     };
 
 

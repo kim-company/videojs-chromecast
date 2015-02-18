@@ -211,11 +211,8 @@ class vjs.ChromecastComponent extends vjs.Button
     @apiSession = null
 
   buildCSSClass: ->
-    "vjs-chromecast-button #{vjs.Button::buildCSSClass.call(this)}"
-
-  createEl: (type, props) ->
-    vjs.Button::createEl.call(this, "div")
+    super + "vjs-chromecast-button"
 
   onClick: ->
-    vjs.Button::onClick.call this
+    super
     if @casting then @stopCasting() else @doLaunch()
