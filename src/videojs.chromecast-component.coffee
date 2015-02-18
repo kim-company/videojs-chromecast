@@ -34,15 +34,12 @@ class vjs.ChromecastComponent extends vjs.Button
 
     vjs.log "Cast APIs are available"
 
-    # Initialize the SessionRequest with the given App ID and the apiConfig.
-    sessionRequest = if @settings.appId
-      new chrome.cast.SessionRequest(@settings.appId)
-    else
-      new chrome.cast.SessionRequest(chrome.cast.media.DEFAULT_MEDIA_RECEIVER_APP_ID)
+    appId = @settings.appId or chrome.cast.media.DEFAULT_MEDIA_RECEIVER_APP_ID
+    sessionRequest = new chrome.cast.SessionRequest(appId)
+
     apiConfig = new chrome.cast.ApiConfig(sessionRequest, @sessionJoinedListener, @receiverListener.bind(this))
 
-    # Initialize Chromecast
-    chrome.cast.initialize(apiConfig, @onInitSuccess.bind(this), @castError)
+    chrome.cast.initialize apiConfig, @onInitSuccess.bind(this), @castError
 
   sessionJoinedListener: (session) ->
     console.log "Session joined"
@@ -69,12 +66,13 @@ class vjs.ChromecastComponent extends vjs.Button
     @apiSession = session
     @addClass "connected"
 
-    mediaInfo = new chrome.cast.media.MediaInfo(@player_.currentSrc(), @player_.currentType());
+    mediaInfo = new chrome.cast.media.MediaInfo @player_.currentSrc(), @player_.currentType()
 
     if @settings.metadata
-      mediaInfo.metadata = new chrome.cast.media.GenericMediaMetadata();
-      mediaInfo.metadata.title = @settings.metadata.title if @settings.metadata.title
-      mediaInfo.metadata.subtitle = @settings.metadata.subtitle if @settings.metadata.subtitle
+      mediaInfo.metadata = new chrome.cast.media.GenericMediaMetadata()
+
+      for key, value of @settings.metadata
+        mediaInfo.metadata[key] = value
 
       if @player_.options_.poster
         image = new chrome.cast.Image(@player_.options_.poster)
