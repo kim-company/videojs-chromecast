@@ -48,7 +48,7 @@
 
     function ChromecastComponent(player, settings) {
       this.settings = settings;
-      vjs.Button.call(this, player, settings);
+      ChromecastComponent.__super__.constructor.call(this, player, settings);
       if (!player.controls()) {
         this.disable();
       }
@@ -57,7 +57,7 @@
     }
 
     ChromecastComponent.prototype.initializeApi = function() {
-      var apiConfig, sessionRequest;
+      var apiConfig, appId, sessionRequest;
       if (!vjs.IS_CHROME) {
         return;
       }
@@ -67,7 +67,8 @@
         return;
       }
       vjs.log("Cast APIs are available");
-      sessionRequest = this.settings.appId ? new chrome.cast.SessionRequest(this.settings.appId) : new chrome.cast.SessionRequest(chrome.cast.media.DEFAULT_MEDIA_RECEIVER_APP_ID);
+      appId = this.settings.appId || chrome.cast.media.DEFAULT_MEDIA_RECEIVER_APP_ID;
+      sessionRequest = new chrome.cast.SessionRequest(appId);
       apiConfig = new chrome.cast.ApiConfig(sessionRequest, this.sessionJoinedListener, this.receiverListener.bind(this));
       return chrome.cast.initialize(apiConfig, this.onInitSuccess.bind(this), this.castError);
     };
@@ -100,18 +101,17 @@
     };
 
     ChromecastComponent.prototype.onSessionSuccess = function(session) {
-      var image, loadRequest, mediaInfo;
+      var image, key, loadRequest, mediaInfo, value, _ref;
       vjs.log("Session initialized: " + session.sessionId);
       this.apiSession = session;
       this.addClass("connected");
       mediaInfo = new chrome.cast.media.MediaInfo(this.player_.currentSrc(), this.player_.currentType());
       if (this.settings.metadata) {
         mediaInfo.metadata = new chrome.cast.media.GenericMediaMetadata();
-        if (this.settings.metadata.title) {
-          mediaInfo.metadata.title = this.settings.metadata.title;
-        }
-        if (this.settings.metadata.subtitle) {
-          mediaInfo.metadata.subtitle = this.settings.metadata.subtitle;
+        _ref = this.settings.metadata;
+        for (key in _ref) {
+          value = _ref[key];
+          mediaInfo.metadata[key] = value;
         }
         if (this.player_.options_.poster) {
           image = new chrome.cast.Image(this.player_.options_.poster);
@@ -298,7 +298,7 @@
       this.featuresFullscreenResize = false;
       this.featuresProgressEvents = true;
       this.receiver = options.source.receiver;
-      vjs.MediaTechController.call(this, player, options, ready);
+      ChromecastTech.__super__.constructor.call(this, player, options, ready);
       this.triggerReady();
     }
 
