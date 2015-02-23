@@ -149,6 +149,8 @@ class vjs.ChromecastComponent extends vjs.Button
   seekMedia: (position) ->
     request = new chrome.cast.media.SeekRequest()
     request.currentTime = position
+    # Make sure playback resumes. videoWasPlaying does not survive minification.
+    request.resumeState = chrome.cast.media.ResumeState.PLAYBACK_START if @player_.controlBar.progressControl.seekBar.videoWasPlaying
 
     @apiMedia.seek request, @onSeekSuccess.bind(this, position), @onError
 
@@ -198,6 +200,12 @@ class vjs.ChromecastComponent extends vjs.Button
     @removeClass "connected"
 
     @player_.src @player_.options_["sources"]
+
+    # Resume playback if not paused when casting is stopped
+    unless @paused
+      @player_.one 'seeked', ->
+        @player_.play()
+    @player_.currentTime(@currentMediaTime)
 
     # Hide the default HTML5 player controls.
     @player_.tech.setControls(false)

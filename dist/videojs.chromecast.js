@@ -1,4 +1,4 @@
-/*! videojs-chromecast - v1.1.0 - 2015-02-18
+/*! videojs-chromecast - v1.1.0 - 2015-02-21
 * https://github.com/kim-company/videojs-chromecast
 * Copyright (c) 2015 KIM Keep In Mind GmbH, srl; Licensed MIT */
 
@@ -205,6 +205,9 @@
       var request;
       request = new chrome.cast.media.SeekRequest();
       request.currentTime = position;
+      if (this.player_.controlBar.progressControl.seekBar.videoWasPlaying) {
+        request.resumeState = chrome.cast.media.ResumeState.PLAYBACK_START;
+      }
       return this.apiMedia.seek(request, this.onSeekSuccess.bind(this, position), this.onError);
     };
 
@@ -258,6 +261,12 @@
       this.casting = false;
       this.removeClass("connected");
       this.player_.src(this.player_.options_["sources"]);
+      if (!this.paused) {
+        this.player_.one('seeked', function() {
+          return this.player_.play();
+        });
+      }
+      this.player_.currentTime(this.currentMediaTime);
       this.player_.tech.setControls(false);
       this.player_.options_.inactivityTimeout = this.inactivityTimeout;
       this.apiMedia = null;
