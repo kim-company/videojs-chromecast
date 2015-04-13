@@ -2,6 +2,9 @@ CHANGELOG
 =========
 
 ## HEAD (Unreleased)
+*(no changes)*
+
+## 1.1.1 (13.04.2014)
 * The Chromecast will no longer stay paused after seeking. (#10)
 * If casting is ended while playing, the browser seeks to the last position and plays. (#10)
 
