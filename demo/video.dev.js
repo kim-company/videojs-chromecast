@@ -80,7 +80,7 @@ vjs.ACCESS_PROTOCOL = ('https:' == document.location.protocol ? 'https://' : 'ht
 * Full player version
 * @type {string}
 */
-vjs['VERSION'] = '4.12.0';
+vjs['VERSION'] = '4.12.4';
 
 /**
  * Global Player instance options, surfaced from vjs.Player.prototype.options_
@@ -6878,13 +6878,13 @@ vjs.MediaTechController.prototype.emulateTextTracks = function() {
 vjs.MediaTechController.prototype.textTracks_;
 
 vjs.MediaTechController.prototype.textTracks = function() {
-  this.textTracks_ = this.textTracks_ || new vjs.TextTrackList();
-  return this.textTracks_;
+  this.player_.textTracks_ = this.player_.textTracks_ || new vjs.TextTrackList();
+  return this.player_.textTracks_;
 };
 
 vjs.MediaTechController.prototype.remoteTextTracks = function() {
-  this.remoteTextTracks_ = this.remoteTextTracks_ || new vjs.TextTrackList();
-  return this.remoteTextTracks_;
+  this.player_.remoteTextTracks_ = this.player_.remoteTextTracks_ || new vjs.TextTrackList();
+  return this.player_.remoteTextTracks_;
 };
 
 createTrackHelper = function(self, kind, label, language, options) {
@@ -7028,6 +7028,16 @@ vjs.MediaTechController.withSourceHandlers = function(Tech){
    */
   Tech.prototype.setSource = function(source){
     var sh = Tech.selectSourceHandler(source);
+
+    if (!sh) {
+      // Fall back to a native source hander when unsupported sources are
+      // deliberately set
+      if (Tech.nativeSourceHandler) {
+        sh = Tech.nativeSourceHandler;
+      } else {
+        vjs.log.error('No source hander found for the current source.');
+      }
+    }
 
     // Dispose any existing source handler
     this.disposeSourceHandler();
@@ -7223,7 +7233,7 @@ vjs.Html5.prototype.createEl = function(){
 
 
 vjs.Html5.prototype.hideCaptions = function() {
-  var tracks = this.el_.textTracks,
+  var tracks = this.el_.querySelectorAll('track'),
       track,
       i = tracks.length,
       kinds = {
@@ -7232,8 +7242,9 @@ vjs.Html5.prototype.hideCaptions = function() {
       };
 
   while (i--) {
-    track = tracks[i];
-    if (track && track['kind'] in kinds) {
+    track = tracks[i].track;
+    if ((track && track['kind'] in kinds) &&
+        (!tracks[i]['default'])) {
       track.mode = 'disabled';
     }
   }
@@ -9558,10 +9569,6 @@ vjs.ChaptersTrackMenuItem.prototype.update = function(){
       if (option.value === value) {
         break;
       }
-    }
-
-    if (target.selectedOptions) {
-      target.selectedOptions[0] = option;
     }
 
     target.selectedIndex = i;
