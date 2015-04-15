@@ -1,4 +1,4 @@
-/*! videojs-chromecast - v1.1.1 - 2015-04-13
+/*! videojs-chromecast - v1.1.1 - 2015-04-15
 * https://github.com/kim-company/videojs-chromecast
 * Copyright (c) 2015 KIM Keep In Mind GmbH, srl; Licensed MIT */
 
@@ -46,9 +46,9 @@
 
     ChromecastComponent.prototype.timerStep = 1000;
 
-    function ChromecastComponent(player, settings1) {
-      this.settings = settings1;
-      ChromecastComponent.__super__.constructor.call(this, player, settings);
+    function ChromecastComponent(player, settings) {
+      this.settings = settings;
+      ChromecastComponent.__super__.constructor.call(this, player, this.settings);
       if (!player.controls()) {
         this.disable();
       }

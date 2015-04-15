@@ -16,7 +16,7 @@ class vjs.ChromecastComponent extends vjs.Button
   timerStep: 1000
 
   constructor: (player, @settings) ->
-    super player, settings
+    super player, @settings
 
     @disable() unless player.controls()
     @hide()
