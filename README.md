@@ -1,5 +1,5 @@
 # [VideoJS](http://www.videojs.com) Chromecast Plugin
-Displays a Chromecast button in the control bar.
+Displays a Chromecast button in the control bar. The button is only shown if the [Google Cast extension](https://chrome.google.com/webstore/detail/google-cast/boadgeojelhgndaghljhdicfkmllpafd) is installed and a Chromecast is currently available.
 
 ![video player](https://raw.githubusercontent.com/kim-company/videojs-chromecast/master/screenshots/chromecast-player.jpg)
 
