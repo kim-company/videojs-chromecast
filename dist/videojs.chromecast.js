@@ -6,20 +6,20 @@
   var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
     hasProp = {}.hasOwnProperty;
 
-  vjs.addLanguage("de", {
+  videojs.addLanguage("de", {
     "CASTING TO": "WIEDERGABE AUF"
   });
 
-  vjs.addLanguage("it", {
+  videojs.addLanguage("it", {
     "CASTING TO": "PLAYBACK SU"
   });
 
-  vjs.plugin("chromecast", function(options) {
-    this.chromecastComponent = new vjs.ChromecastComponent(this, options);
+  videojs.plugin("chromecast", function(options) {
+    this.chromecastComponent = new videojs.ChromecastComponent(this, options);
     return this.controlBar.addChild(this.chromecastComponent);
   });
 
-  vjs.ChromecastComponent = (function(superClass) {
+  videojs.ChromecastComponent = (function(superClass) {
     extend(ChromecastComponent, superClass);
 
     ChromecastComponent.prototype.buttonText = "Chromecast";
@@ -58,15 +58,15 @@
 
     ChromecastComponent.prototype.initializeApi = function() {
       var apiConfig, appId, sessionRequest;
-      if (!vjs.IS_CHROME) {
+      if (!videojs.IS_CHROME) {
         return;
       }
       if (!chrome.cast || !chrome.cast.isAvailable) {
-        vjs.log("Cast APIs not available. Retrying...");
+        videojs.log("Cast APIs not available. Retrying...");
         setTimeout(this.initializeApi.bind(this), 1000);
         return;
       }
-      vjs.log("Cast APIs are available");
+      videojs.log("Cast APIs are available");
       appId = this.settings.appId || chrome.cast.media.DEFAULT_MEDIA_RECEIVER_APP_ID;
       sessionRequest = new chrome.cast.SessionRequest(appId);
       apiConfig = new chrome.cast.ApiConfig(sessionRequest, this.sessionJoinedListener, this.receiverListener.bind(this));
@@ -88,21 +88,21 @@
     };
 
     ChromecastComponent.prototype.castError = function(castError) {
-      return vjs.log("Cast Error: " + (JSON.stringify(castError)));
+      return videojs.log("Cast Error: " + (JSON.stringify(castError)));
     };
 
     ChromecastComponent.prototype.doLaunch = function() {
-      vjs.log("Cast video: " + (this.player_.currentSrc()));
+      videojs.log("Cast video: " + (this.player_.currentSrc()));
       if (this.apiInitialized) {
         return chrome.cast.requestSession(this.onSessionSuccess.bind(this), this.castError);
       } else {
-        return vjs.log("Session not initialized");
+        return videojs.log("Session not initialized");
       }
     };
 
     ChromecastComponent.prototype.onSessionSuccess = function(session) {
       var image, key, loadRequest, mediaInfo, ref, value;
-      vjs.log("Session initialized: " + session.sessionId);
+      videojs.log("Session initialized: " + session.sessionId);
       this.apiSession = session;
       this.addClass("connected");
       mediaInfo = new chrome.cast.media.MediaInfo(this.player_.currentSrc(), this.player_.currentType());
@@ -186,7 +186,7 @@
         return;
       }
       if (this.paused) {
-        this.apiMedia.play(null, this.mediaCommandSuccessCallback.bind(this, "Playing: " + this.apiMedia.sessionId), this.onError);
+        this.apiMedia.play(null, this.mediaCommandSuccessCallback.bind(this, "Playing: " + this.apiMedia.sessionId), this.handleTechError);
         return this.paused = false;
       }
     };
@@ -196,7 +196,7 @@
         return;
       }
       if (!this.paused) {
-        this.apiMedia.pause(null, this.mediaCommandSuccessCallback.bind(this, "Paused: " + this.apiMedia.sessionId), this.onError);
+        this.apiMedia.pause(null, this.mediaCommandSuccessCallback.bind(this, "Paused: " + this.apiMedia.sessionId), this.handleTechError);
         return this.paused = true;
       }
     };
@@ -208,7 +208,7 @@
       if (this.player_.controlBar.progressControl.seekBar.videoWasPlaying) {
         request.resumeState = chrome.cast.media.ResumeState.PLAYBACK_START;
       }
-      return this.apiMedia.seek(request, this.onSeekSuccess.bind(this, position), this.onError);
+      return this.apiMedia.seek(request, this.onSeekSuccess.bind(this, position), this.handleTechError);
     };
 
     ChromecastComponent.prototype.onSeekSuccess = function(position) {
@@ -227,7 +227,7 @@
       this.muted = mute;
       request = new chrome.cast.media.VolumeRequest();
       request.volume = volume;
-      this.apiMedia.setVolume(request, this.mediaCommandSuccessCallback.bind(this, "Volume changed"), this.onError);
+      this.apiMedia.setVolume(request, this.mediaCommandSuccessCallback.bind(this, "Volume changed"), this.handleTechError);
       return this.player_.trigger("volumechange");
     };
 
@@ -245,15 +245,15 @@
     };
 
     ChromecastComponent.prototype.mediaCommandSuccessCallback = function(information, event) {
-      return vjs.log(information);
+      return videojs.log(information);
     };
 
-    ChromecastComponent.prototype.onError = function() {
-      return vjs.log("error");
+    ChromecastComponent.prototype.handleTechError = function() {
+      return videojs.log("error");
     };
 
     ChromecastComponent.prototype.stopCasting = function() {
-      return this.apiSession.stop(this.onStopAppSuccess.bind(this), this.onError);
+      return this.apiSession.stop(this.onStopAppSuccess.bind(this), this.handleTechError);
     };
 
     ChromecastComponent.prototype.onStopAppSuccess = function() {
@@ -288,9 +288,9 @@
 
     return ChromecastComponent;
 
-  })(vjs.Button);
+  })(videojs.getComponent('Button'));
 
-  vjs.ChromecastTech = (function(superClass) {
+  videojs.ChromecastTech = (function(superClass) {
     extend(ChromecastTech, superClass);
 
     ChromecastTech.isSupported = function() {
@@ -318,7 +318,7 @@
       element.className = "vjs-tech vjs-tech-chromecast";
       element.innerHTML = "<div class=\"casting-image\" style=\"background-image: url('" + this.player_.options_.poster + "')\"></div>\n<div class=\"casting-overlay\">\n  <div class=\"casting-information\">\n    <div class=\"casting-icon\">&#58880</div>\n    <div class=\"casting-description\"><small>" + (this.localize("CASTING TO")) + "</small><br>" + this.receiver + "</div>\n  </div>\n</div>";
       element.player = this.player_;
-      vjs.insertFirst(element, this.player_.el());
+      videojs.insertFirst(element, this.player_.el());
       return element;
     };
 
@@ -329,12 +329,12 @@
 
     ChromecastTech.prototype.play = function() {
       this.player_.chromecastComponent.play();
-      return this.player_.onPlay();
+      return this.player_.handleTechPlay();
     };
 
     ChromecastTech.prototype.pause = function() {
       this.player_.chromecastComponent.pause();
-      return this.player_.onPause();
+      return this.player_.handleTechPause();
     };
 
     ChromecastTech.prototype.paused = function() {
@@ -371,6 +371,6 @@
 
     return ChromecastTech;
 
-  })(vjs.MediaTechController);
+  })(videojs.getComponent('MediaTechController'));
 
 }).call(this);
