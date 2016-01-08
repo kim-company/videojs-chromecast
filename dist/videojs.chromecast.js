@@ -294,8 +294,8 @@
       return ChromecastComponent.__super__.buildCSSClass.apply(this, arguments) + "vjs-chromecast-button";
     };
 
-    ChromecastComponent.prototype.onClick = function() {
-      ChromecastComponent.__super__.onClick.apply(this, arguments);
+    ChromecastComponent.prototype.handleClick = function() {
+      ChromecastComponent.__super__.handleClick.apply(this, arguments);
       if (this.casting) {
         return this.stopCasting();
       } else {
