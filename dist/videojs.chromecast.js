@@ -62,23 +62,33 @@
         return;
       }
       if (!chrome.cast || !chrome.cast.isAvailable) {
-        videojs.log("Cast APIs not available. Retrying...");
-        setTimeout(this.initializeApi.bind(this), 1000);
+        videojs.log("Cast APIs not available. Waiting...");
+        window['__onGCastApiAvailable'] = this.deferedInitialize.bind(this);
         return;
       }
       videojs.log("Cast APIs are available");
-      appId = this.settings.appId || chrome.cast.media.DEFAULT_MEDIA_RECEIVER_APP_ID;
+      appId = this.settings.hasOwnProperty('appId') && this.settings.appId || chrome.cast.media.DEFAULT_MEDIA_RECEIVER_APP_ID;
       sessionRequest = new chrome.cast.SessionRequest(appId);
       apiConfig = new chrome.cast.ApiConfig(sessionRequest, this.sessionJoinedListener, this.receiverListener.bind(this));
       return chrome.cast.initialize(apiConfig, this.onInitSuccess.bind(this), this.castError);
     };
 
+    ChromecastComponent.prototype.deferedInitialize = function(loaded, errorInfo) {
+      if(loaded) {
+        this.initializeApi();  
+      } else {
+        videojs.log("Error initialising API");
+        videojs.log(errorInfo);
+      }
+    };
+
     ChromecastComponent.prototype.sessionJoinedListener = function(session) {
+      // TODO/TK actually do something about the session we joined (load the tech maybe?)
       return console.log("Session joined");
     };
 
     ChromecastComponent.prototype.receiverListener = function(availability) {
-      if (availability === "available") {
+      if (availability === chrome.cast.ReceiverAvailability.AVAILABLE) {
         return this.show();
       }
     };
@@ -129,6 +139,11 @@
       this.apiMedia = media;
       this.apiMedia.addUpdateListener(this.onMediaStatusUpdate.bind(this));
       this.startProgressTimer(this.incrementMediaTime.bind(this));
+      // TODO cleanup; below is a hack
+      // if(this.player_.tech.mediaSource && this.player_.tech.mediaSource.swfObj) {
+      //   this.player_.tech.mediaSource.off = vjs.off;
+      // }
+      // end hack
       this.player_.loadTech("ChromecastTech", {
         receiver: this.apiSession.receiver.friendlyName
       });
@@ -257,6 +272,8 @@
     };
 
     ChromecastComponent.prototype.onStopAppSuccess = function() {
+      // TODO a bunch here broken; it's trying to reset the source
+      // but we've removed the HLS tech, perhaps uncleanly?
       clearInterval(this.timer);
       this.casting = false;
       this.removeClass("connected");
@@ -316,7 +333,8 @@
       element = document.createElement("div");
       element.id = this.player_.id_ + "_chromecast_api";
       element.className = "vjs-tech vjs-tech-chromecast";
-      element.innerHTML = "<div class=\"casting-image\" style=\"background-image: url('" + this.player_.options_.poster + "')\"></div>\n<div class=\"casting-overlay\">\n  <div class=\"casting-information\">\n    <div class=\"casting-icon\">&#58880</div>\n    <div class=\"casting-description\"><small>" + (this.localize("CASTING TO")) + "</small><br>" + this.receiver + "</div>\n  </div>\n</div>";
+      // TODO poster; should this ever have worked?
+      element.innerHTML = "<div class=\"casting-image\" style=\"background-image: url('" + ( this.player_.options_.poster || this.player_.poster_ ) + "')\"></div>\n<div class=\"casting-overlay\">\n  <div class=\"casting-information\">\n    <div class=\"casting-icon\">&#58880</div>\n    <div class=\"casting-description\"><small>" + (this.localize("CASTING TO")) + "</small><br>" + this.receiver + "</div>\n  </div>\n</div>";
       element.player = this.player_;
       videojs.insertFirst(element, this.player_.el());
       return element;
@@ -328,6 +346,7 @@
      */
 
     ChromecastTech.prototype.play = function() {
+      // TODO play button isn't changing to a pause button ever?
       this.player_.chromecastComponent.play();
       return this.player_.handleTechPlay();
     };
