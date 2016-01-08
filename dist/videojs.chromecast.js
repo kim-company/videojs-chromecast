@@ -144,7 +144,8 @@
       //   this.player_.tech.mediaSource.off = vjs.off;
       // }
       // end hack
-      this.player_.loadTech("ChromecastTech", {
+      this.currentSrc_ = this.player_.currentSrc(); // ??
+      this.player_.loadTech_("ChromecastTech", {
         receiver: this.apiSession.receiver.friendlyName
       });
       this.casting = true;
@@ -307,36 +308,37 @@
 
   })(videojs.getComponent('Button'));
 
-  videojs.ChromecastTech = (function(superClass) {
+  var ChromecastTech = (function(superClass) {
     extend(ChromecastTech, superClass);
 
     ChromecastTech.isSupported = function() {
-      return this.player_.chromecastComponent.apiInitialized;
+      return this.player.chromecastComponent.apiInitialized;
     };
 
     ChromecastTech.canPlaySource = function(source) {
       return source.type === "video/mp4" || source.type === "video/webm" || source.type === "application/x-mpegURL" || source.type === "application/vnd.apple.mpegURL";
     };
 
-    function ChromecastTech(player, options, ready) {
+    function ChromecastTech(options) {
       this.featuresVolumeControl = true;
       this.movingMediaElementInDOM = false;
       this.featuresFullscreenResize = false;
       this.featuresProgressEvents = true;
       this.receiver = options.source.receiver;
-      ChromecastTech.__super__.constructor.call(this, player, options, ready);
+      this.player = videojs(options.playerId);
+      ChromecastTech.__super__.constructor.call(this, options);
       this.triggerReady();
     }
 
     ChromecastTech.prototype.createEl = function() {
       var element;
       element = document.createElement("div");
-      element.id = this.player_.id_ + "_chromecast_api";
+      element.id = this.player.id_ + "_chromecast_api";
       element.className = "vjs-tech vjs-tech-chromecast";
       // TODO poster; should this ever have worked?
-      element.innerHTML = "<div class=\"casting-image\" style=\"background-image: url('" + ( this.player_.options_.poster || this.player_.poster_ ) + "')\"></div>\n<div class=\"casting-overlay\">\n  <div class=\"casting-information\">\n    <div class=\"casting-icon\">&#58880</div>\n    <div class=\"casting-description\"><small>" + (this.localize("CASTING TO")) + "</small><br>" + this.receiver + "</div>\n  </div>\n</div>";
-      element.player = this.player_;
-      videojs.insertFirst(element, this.player_.el());
+      element.innerHTML = "<div class=\"casting-image\" style=\"background-image: url('" + ( this.player.options_.poster || this.player.poster_ ) + "')\"></div>\n<div class=\"casting-overlay\">\n  <div class=\"casting-information\">\n    <div class=\"casting-icon\">&#58880</div>\n    <div class=\"casting-description\"><small>" + (this.localize("CASTING TO")) + "</small><br>" + this.receiver + "</div>\n  </div>\n</div>";
+      element.player = this.player;
+      // videojs.insertFirst(element, this.player.el());
       return element;
     };
 
@@ -347,41 +349,56 @@
 
     ChromecastTech.prototype.play = function() {
       // TODO play button isn't changing to a pause button ever?
-      this.player_.chromecastComponent.play();
-      return this.player_.handleTechPlay();
+      this.player.chromecastComponent.play();
+      return this.player.handleTechPlaying_();
     };
 
     ChromecastTech.prototype.pause = function() {
-      this.player_.chromecastComponent.pause();
-      return this.player_.handleTechPause();
+      this.player.chromecastComponent.pause();
+      // return this.pause();
     };
 
     ChromecastTech.prototype.paused = function() {
-      return this.player_.chromecastComponent.paused;
+      return this.player.chromecastComponent.paused;
     };
 
     ChromecastTech.prototype.currentTime = function() {
-      return this.player_.chromecastComponent.currentMediaTime;
+      return this.player.chromecastComponent.currentMediaTime;
     };
 
     ChromecastTech.prototype.setCurrentTime = function(seconds) {
-      return this.player_.chromecastComponent.seekMedia(seconds);
+      return this.player.chromecastComponent.seekMedia(seconds);
+    };
+
+    ChromecastTech.prototype.currentSrc = function(src) {
+      console.log("got currentSrc call");
+      console.log(src);
+      return this.player.chromecastComponent.currentSrc_;
+    }
+
+    ChromecastTech.prototype.duration = function() {
+      console.log("got duration call??");
+      // return the actual duration; perhaps we should've stored it first?
+    };
+
+    ChromecastTech.prototype.controls = function() {
+      return false;
     };
 
     ChromecastTech.prototype.volume = function() {
-      return this.player_.chromecastComponent.currentVolume;
+      return this.player.chromecastComponent.currentVolume;
     };
 
     ChromecastTech.prototype.setVolume = function(volume) {
-      return this.player_.chromecastComponent.setMediaVolume(volume, false);
+      return this.player.chromecastComponent.setMediaVolume(volume, false);
     };
 
     ChromecastTech.prototype.muted = function() {
-      return this.player_.chromecastComponent.muted;
+      return this.player.chromecastComponent.muted;
     };
 
     ChromecastTech.prototype.setMuted = function(muted) {
-      return this.player_.chromecastComponent.setMediaVolume(this.player_.chromecastComponent.currentVolume, muted);
+      return this.player.chromecastComponent.setMediaVolume(this.player.chromecastComponent.currentVolume, muted);
     };
 
     ChromecastTech.prototype.supportsFullScreen = function() {
@@ -391,5 +408,7 @@
     return ChromecastTech;
 
   })(videojs.getComponent('MediaTechController'));
+
+  videojs.registerTech('ChromecastTech', ChromecastTech);
 
 }).call(this);
