@@ -112,6 +112,7 @@
 
     ChromecastComponent.prototype.onSessionSuccess = function(session) {
       var image, key, loadRequest, mediaInfo, ref, value;
+      // TODO stop the control-bar disappearing in 'not-hover'
       videojs.log("Session initialized: " + session.sessionId);
       this.apiSession = session;
       this.addClass("connected");
@@ -139,12 +140,7 @@
       this.apiMedia = media;
       this.apiMedia.addUpdateListener(this.onMediaStatusUpdate.bind(this));
       this.startProgressTimer(this.incrementMediaTime.bind(this));
-      // TODO cleanup; below is a hack
-      // if(this.player_.tech.mediaSource && this.player_.tech.mediaSource.swfObj) {
-      //   this.player_.tech.mediaSource.off = vjs.off;
-      // }
-      // end hack
-      this.currentSrc_ = this.player_.currentSrc(); // ??
+      this.currentSrc_ = this.player_.currentSrc();
       this.player_.loadTech_("ChromecastTech", {
         receiver: this.apiSession.receiver.friendlyName
       });
@@ -273,19 +269,20 @@
     };
 
     ChromecastComponent.prototype.onStopAppSuccess = function() {
-      // TODO a bunch here broken; it's trying to reset the source
-      // but we've removed the HLS tech, perhaps uncleanly?
       clearInterval(this.timer);
       this.casting = false;
       this.removeClass("connected");
-      this.player_.src(this.player_.options_["sources"]);
+      if(this.player_.catalog && this.player_.catalog.load && this.player_.mediainfo && this.player_.mediainfo.id) {
+        this.player_.catalog.load(this.player_.mediainfo);
+      } else {
+        this.player_.src(this.player_.options_["sources"]);
+      }
       if (!this.paused) {
         this.player_.one('seeked', function() {
           return this.player_.play();
         });
       }
       this.player_.currentTime(this.currentMediaTime);
-      this.player_.tech.setControls(false);
       this.player_.options_.inactivityTimeout = this.inactivityTimeout;
       this.apiMedia = null;
       return this.apiSession = null;
@@ -335,10 +332,8 @@
       element = document.createElement("div");
       element.id = this.player.id_ + "_chromecast_api";
       element.className = "vjs-tech vjs-tech-chromecast";
-      // TODO poster; should this ever have worked?
       element.innerHTML = "<div class=\"casting-image\" style=\"background-image: url('" + ( this.player.options_.poster || this.player.poster_ ) + "')\"></div>\n<div class=\"casting-overlay\">\n  <div class=\"casting-information\">\n    <div class=\"casting-icon\">&#58880</div>\n    <div class=\"casting-description\"><small>" + (this.localize("CASTING TO")) + "</small><br>" + this.receiver + "</div>\n  </div>\n</div>";
       element.player = this.player;
-      // videojs.insertFirst(element, this.player.el());
       return element;
     };
 
@@ -348,14 +343,13 @@
      */
 
     ChromecastTech.prototype.play = function() {
-      // TODO play button isn't changing to a pause button ever?
       this.player.chromecastComponent.play();
-      return this.player.handleTechPlaying_();
+      this.trigger('play');
     };
 
     ChromecastTech.prototype.pause = function() {
       this.player.chromecastComponent.pause();
-      // return this.pause();
+      this.trigger('pause');
     };
 
     ChromecastTech.prototype.paused = function() {
@@ -371,15 +365,21 @@
     };
 
     ChromecastTech.prototype.currentSrc = function(src) {
-      console.log("got currentSrc call");
-      console.log(src);
+      if(typeof(src)!='undefined'){
+        videojs.log("TODO Should change source to: " + src)
+      }
       return this.player.chromecastComponent.currentSrc_;
     }
 
     ChromecastTech.prototype.duration = function() {
-      console.log("got duration call??");
-      // return the actual duration; perhaps we should've stored it first?
+      // MAYBE TODO theoretically the player wants us to return a duration, but it doesn't seem to matter
+      videojs.log("ChromecastTech got duration call??");
     };
+
+    ChromecastTech.prototype.ended = function(){
+      // this fires at strange times, but can just be ignored
+      return true;
+    }
 
     ChromecastTech.prototype.controls = function() {
       return false;
@@ -407,7 +407,7 @@
 
     return ChromecastTech;
 
-  })(videojs.getComponent('MediaTechController'));
+  })(videojs.getTech('Tech'));
 
   videojs.registerTech('ChromecastTech', ChromecastTech);
 
