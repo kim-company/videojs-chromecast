@@ -148,8 +148,14 @@
       this.paused = this.player_.paused();
       this.inactivityTimeout = this.player_.options_.inactivityTimeout;
       this.player_.options_.inactivityTimeout = 0;
+      this.player_.removeClass('not-hover');
+      this.player_.on('mouseout', this.doNotHover.bind(this));
       return this.player_.userActive(true);
     };
+
+    ChromecastComponent.prototype.doNotHover = function() {
+      this.player_.removeClass('not-hover');
+    }
 
     ChromecastComponent.prototype.onSessionUpdate = function(isAlive) {
       if (!this.apiMedia) {
