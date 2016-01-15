@@ -3,7 +3,7 @@
 * Copyright (c) 2016 KIM Keep In Mind GmbH, srl; Licensed MIT */
 
 (function() {
-  var ChromecastTech, Tech, vjsButton,
+  var ChromecastComponent, ChromecastTech, Tech, vjsButton,
     extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
     hasProp = {}.hasOwnProperty;
 
@@ -16,13 +16,14 @@
   });
 
   videojs.plugin("chromecast", function(options) {
-    this.chromecastComponent = new videojs.ChromecastComponent(this, options);
-    return this.controlBar.addChild(this.chromecastComponent);
+    return this.ready(function() {
+      return this.chromecastComponent = this.controlBar.addChild('ChromecastComponent', options);
+    });
   });
 
   vjsButton = videojs.getComponent("Button");
 
-  videojs.ChromecastComponent = (function(superClass) {
+  ChromecastComponent = (function(superClass) {
     extend(ChromecastComponent, superClass);
 
     ChromecastComponent.prototype.buttonText = "Chromecast";
@@ -141,9 +142,10 @@
       this.apiMedia = media;
       this.apiMedia.addUpdateListener(this.onMediaStatusUpdate.bind(this));
       this.startProgressTimer(this.incrementMediaTime.bind(this));
-      this.currentSrc_ = this.player_.currentSrc();
       this.player_.loadTech_("ChromecastTech", {
-        receiver: this.apiSession.receiver.friendlyName
+        currentSrc: this.player_.currentSrc(),
+        receiver: this.apiSession.receiver.friendlyName,
+        chromecastComponent: this
       });
       this.casting = true;
       this.paused = this.player_.paused();
@@ -312,13 +314,15 @@
 
   })(vjsButton);
 
+  videojs.registerComponent("ChromecastComponent", ChromecastComponent);
+
   Tech = videojs.getTech('Tech');
 
   ChromecastTech = (function(superClass) {
     extend(ChromecastTech, superClass);
 
     ChromecastTech.isSupported = function() {
-      return this.player_.chromecastComponent.apiInitialized;
+      return this.chromecastComponent_.apiInitialized;
     };
 
     ChromecastTech.canPlaySource = function(source) {
@@ -331,6 +335,10 @@
       this.featuresFullscreenResize = false;
       this.featuresProgressEvents = true;
       this.receiver = options.source.receiver;
+      this.player_id_ = options.playerId;
+      this.chromecastComponent_ = options.source.chromecastComponent;
+      this.poster_ = options.poster;
+      this.currentSrc_ = options.source.currentSrc;
       ChromecastTech.__super__.constructor.call(this, options);
       this.triggerReady();
     }
@@ -338,10 +346,9 @@
     ChromecastTech.prototype.createEl = function() {
       var element;
       element = document.createElement("div");
-      element.id = this.player_.id_ + "_chromecast_api";
-      element.className = "videojs-tech videojs-tech-chromecast";
-      element.innerHTML = "<div class=\"casting-image\" style=\"background-image: url('" + (this.player_.options_.poster || this.player_.poster_) + "')\"></div>\n<div class=\"casting-overlay\">\n  <div class=\"casting-information\">\n    <div class=\"casting-icon\">&#58880</div>\n    <div class=\"casting-description\"><small>" + (this.localize("CASTING TO")) + "</small><br>" + this.receiver + "</div>\n  </div>\n</div>";
-      element.player = this.player_;
+      element.id = this.player_id_ + "_chromecast_api";
+      element.className = "vjs-tech vjs-tech-chromecast";
+      element.innerHTML = "<div class=\"casting-image\" style=\"background-image: url('" + this.poster_ + "')\"></div>\n<div class=\"casting-overlay\">\n  <div class=\"casting-information\">\n    <div class=\"casting-icon\"></div>\n    <div class=\"casting-description\"><small>" + (this.localize("CASTING TO")) + "</small><br>" + this.receiver + "</div>\n  </div>\n</div>";
       return element;
     };
 
@@ -351,32 +358,36 @@
      */
 
     ChromecastTech.prototype.play = function() {
-      this.player_.chromecastComponent.play();
+      this.chromecastComponent_.play();
       return this.trigger('play');
     };
 
     ChromecastTech.prototype.pause = function() {
-      this.player_.chromecastComponent.pause();
+      this.chromecastComponent_.pause();
       return this.trigger('pause');
     };
 
     ChromecastTech.prototype.paused = function() {
-      return this.player_.chromecastComponent.paused;
+      return this.chromecastComponent_.paused;
     };
 
     ChromecastTech.prototype.currentTime = function() {
-      return this.player_.chromecastComponent.currentMediaTime;
+      return this.chromecastComponent_.currentMediaTime;
     };
 
     ChromecastTech.prototype.setCurrentTime = function(seconds) {
-      return this.player_.chromecastComponent.seekMedia(seconds);
+      return this.chromecastComponent_.seekMedia(seconds);
     };
 
     ChromecastTech.prototype.currentSrc = function(src) {
       if (typeof src !== 'undefined') {
         videojs.log("TODO Should change source to: " + src);
       }
-      return this.player_.chromecastComponent.currentSrc_;
+      return this.currentSrc_;
+    };
+
+    ChromecastTech.prototype.src = function(src) {
+      return this.currentSrc(src);
     };
 
     ChromecastTech.prototype.duration = function() {
@@ -387,24 +398,24 @@
       return true;
     };
 
-    ChromecastTech.prototype.conrols = function() {
+    ChromecastTech.prototype.controls = function() {
       return false;
     };
 
     ChromecastTech.prototype.volume = function() {
-      return this.player_.chromecastComponent.currentVolume;
+      return this.chromecastComponent_.currentVolume;
     };
 
     ChromecastTech.prototype.setVolume = function(volume) {
-      return this.player_.chromecastComponent.setMediaVolume(volume, false);
+      return this.chromecastComponent_.setMediaVolume(volume, false);
     };
 
     ChromecastTech.prototype.muted = function() {
-      return this.player_.chromecastComponent.muted;
+      return this.chromecastComponent_.muted;
     };
 
     ChromecastTech.prototype.setMuted = function(muted) {
-      return this.player_.chromecastComponent.setMediaVolume(this.player_.chromecastComponent.currentVolume, muted);
+      return this.chromecastComponent_.setMediaVolume(this.chromecastComponent_.currentVolume, muted);
     };
 
     ChromecastTech.prototype.supportsFullScreen = function() {

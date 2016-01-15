@@ -50,13 +50,16 @@
   color: #FFF;
 }
 .vjs-tech-chromecast .casting-overlay .casting-information .casting-icon {
-  font-family: "chromecast" !important;
   font-size: 44px;
   line-height: 50px;
   margin-right: 10px;
   float: left;
   width: 58px;
   height: 50px;
+}
+.vjs-tech-chromecast .casting-overlay .casting-information .casting-icon:before {
+  content: "\e600";
+  font-family: "chromecast" !important;
 }
 .vjs-tech-chromecast .casting-overlay .casting-information .casting-description {
   height: 50px;

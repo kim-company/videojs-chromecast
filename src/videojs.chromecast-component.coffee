@@ -1,6 +1,6 @@
 vjsButton = videojs.getComponent "Button"
 
-class videojs.ChromecastComponent extends vjsButton
+class ChromecastComponent extends vjsButton
   buttonText: "Chromecast"
   inactivityTimeout: 2000
 
@@ -102,9 +102,11 @@ class videojs.ChromecastComponent extends vjsButton
 
     @startProgressTimer @incrementMediaTime.bind(this)
 
-    @currentSrc_ = @player_.currentSrc()
-    @player_.loadTech_ "ChromecastTech",
-      receiver: @apiSession.receiver.friendlyName
+    @player_.loadTech_ "ChromecastTech", {
+      currentSrc: @player_.currentSrc(),
+      receiver: @apiSession.receiver.friendlyName,
+      chromecastComponent: @
+    }
 
     @casting = true
     @paused = @player_.paused()
@@ -239,3 +241,5 @@ class videojs.ChromecastComponent extends vjsButton
   handleClick: ->
     super
     if @casting then @stopCasting() else @doLaunch()
+
+videojs.registerComponent "ChromecastComponent", ChromecastComponent
