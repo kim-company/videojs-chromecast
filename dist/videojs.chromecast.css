@@ -9,7 +9,6 @@
   font-style: normal;
 }
 .vjs-chromecast-button {
-  float: right !important;
   cursor: pointer;
   width: 3em !important;
 }

@@ -142,6 +142,8 @@
       this.apiMedia = media;
       this.apiMedia.addUpdateListener(this.onMediaStatusUpdate.bind(this));
       this.startProgressTimer(this.incrementMediaTime.bind(this));
+      this.oldTech_ = this.player_.techName_;
+      this.oldSrc_ = this.player_.currentSrc();
       this.player_.loadTech_("ChromecastTech", {
         currentSrc: this.player_.currentSrc(),
         receiver: this.apiSession.receiver.friendlyName,
@@ -281,10 +283,11 @@
       clearInterval(this.timer);
       this.casting = false;
       this.removeClass("connected");
+      this.player_.loadTech_(this.oldTech_);
       if (this.player_.catalog && this.player_.catalog.load && this.player_.mediainfo && this.player_.mediainfo.id) {
         this.player_.catalog.load(this.player_.mediainfo);
       } else {
-        this.player_.src(this.player_.options_["sources"]);
+        this.player_.src(this.oldSrc_);
       }
       if (!this.paused) {
         this.player_.one('seeked', function() {

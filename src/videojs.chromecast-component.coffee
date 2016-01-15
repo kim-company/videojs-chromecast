@@ -102,6 +102,9 @@ class ChromecastComponent extends vjsButton
 
     @startProgressTimer @incrementMediaTime.bind(this)
 
+    @oldTech_ = @player_.techName_
+    @oldSrc_ = @player_.currentSrc()
+
     @player_.loadTech_ "ChromecastTech", {
       currentSrc: @player_.currentSrc(),
       receiver: @apiSession.receiver.friendlyName,
@@ -218,10 +221,12 @@ class ChromecastComponent extends vjsButton
     @casting = false
     @removeClass "connected"
 
+    @player_.loadTech_(@oldTech_)
+
     if @player_.catalog and @player_.catalog.load and @player_.mediainfo and @player_.mediainfo.id
       @player_.catalog.load @player_.mediainfo
     else
-      @player_.src @player_.options_["sources"]
+      @player_.src @oldSrc_
 
     # Resume playback if not paused when casting is stopped
     unless @paused
