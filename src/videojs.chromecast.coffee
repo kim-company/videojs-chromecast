@@ -1,3 +1,3 @@
-vjs.plugin "chromecast", (options) ->
-  @chromecastComponent = new vjs.ChromecastComponent(@, options)
+videojs.plugin "chromecast", (options) ->
+  @chromecastComponent = new videojs.ChromecastComponent(@, options)
   @controlBar.addChild @chromecastComponent

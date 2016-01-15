@@ -1,4 +1,6 @@
-class vjs.ChromecastTech extends vjs.MediaTechController
+Tech = videojs.getTech('Tech')
+
+class ChromecastTech extends Tech
   @isSupported = ->
     @player_.chromecastComponent.apiInitialized
 
@@ -8,7 +10,7 @@ class vjs.ChromecastTech extends vjs.MediaTechController
     source.type is "application/x-mpegURL" or
     source.type is "application/vnd.apple.mpegURL"
 
-  constructor: (player, options, ready) ->
+  constructor: (options) ->
     @featuresVolumeControl = true
     @movingMediaElementInDOM = false
     @featuresFullscreenResize = false
@@ -16,16 +18,16 @@ class vjs.ChromecastTech extends vjs.MediaTechController
 
     @receiver = options.source.receiver
 
-    super player, options, ready
+    super  options
 
     @triggerReady()
 
   createEl: ->
     element = document.createElement "div"
     element.id = "#{@player_.id_}_chromecast_api"
-    element.className = "vjs-tech vjs-tech-chromecast"
+    element.className = "videojs-tech videojs-tech-chromecast"
     element.innerHTML = """
-      <div class="casting-image" style="background-image: url('#{@player_.options_.poster}')"></div>
+      <div class="casting-image" style="background-image: url('#{@player_.options_.poster or @player_.poster_ }')"></div>
       <div class="casting-overlay">
         <div class="casting-information">
           <div class="casting-icon">&#58880</div>
@@ -35,7 +37,6 @@ class vjs.ChromecastTech extends vjs.MediaTechController
     """
 
     element.player = @player_
-    vjs.insertFirst element, @player_.el()
 
     element
 
@@ -44,12 +45,13 @@ class vjs.ChromecastTech extends vjs.MediaTechController
   ###
 
   play: ->
+    # TODO play button isn't changing to a pause button ever?
     @player_.chromecastComponent.play()
-    @player_.onPlay()
+    @trigger 'play'
 
   pause: ->
     @player_.chromecastComponent.pause()
-    @player_.onPause()
+    @trigger 'pause'
 
   paused: ->
     @player_.chromecastComponent.paused
@@ -59,6 +61,22 @@ class vjs.ChromecastTech extends vjs.MediaTechController
 
   setCurrentTime: (seconds) ->
     @player_.chromecastComponent.seekMedia seconds
+
+  currentSrc: (src) ->
+    if typeof src != 'undefined'
+      videojs.log "TODO Should change source to: #{src}"
+    @player_.chromecastComponent.currentSrc_
+
+  duration: ->
+    # MAYBE TODO theoretically the player wants us to return a duration, but it doesn't seem to matter
+    videojs.log "ChromecastTech got duration call??"
+
+  ended: ->
+    # this fires at strange times, but can just be ignored
+    true
+
+  conrols: ->
+    false
 
   volume: ->
     @player_.chromecastComponent.currentVolume
@@ -74,3 +92,5 @@ class vjs.ChromecastTech extends vjs.MediaTechController
 
   supportsFullScreen: ->
     false
+
+videojs.registerTech "ChromecastTech", ChromecastTech

@@ -1,9 +1,10 @@
-/*! videojs-chromecast - v1.1.1 - 2015-04-15
+/*! videojs-chromecast - v1.1.1 - 2016-01-15
 * https://github.com/kim-company/videojs-chromecast
-* Copyright (c) 2015 KIM Keep In Mind GmbH, srl; Licensed MIT */
+* Copyright (c) 2016 KIM Keep In Mind GmbH, srl; Licensed MIT */
 
 (function() {
-  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+  var ChromecastTech, Tech, vjsButton,
+    extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
     hasProp = {}.hasOwnProperty;
 
   videojs.addLanguage("de", {
@@ -18,6 +19,8 @@
     this.chromecastComponent = new videojs.ChromecastComponent(this, options);
     return this.controlBar.addChild(this.chromecastComponent);
   });
+
+  vjsButton = videojs.getComponent("Button");
 
   videojs.ChromecastComponent = (function(superClass) {
     extend(ChromecastComponent, superClass);
@@ -58,7 +61,7 @@
 
     ChromecastComponent.prototype.initializeApi = function() {
       var apiConfig, appId, sessionRequest;
-      if (!videojs.IS_CHROME) {
+      if (!videojs.browser.IS_CHROME) {
         return;
       }
       if (!chrome.cast || !chrome.cast.isAvailable) {
@@ -74,16 +77,15 @@
     };
 
     ChromecastComponent.prototype.deferedInitialize = function(loaded, errorInfo) {
-      if(loaded) {
-        this.initializeApi();  
+      if (loaded) {
+        return this.initializeApi;
       } else {
         videojs.log("Error initialising API");
-        videojs.log(errorInfo);
+        return videojs.log(errorInfo);
       }
     };
 
     ChromecastComponent.prototype.sessionJoinedListener = function(session) {
-      // TODO/TK actually do something about the session we joined (load the tech maybe?)
       return console.log("Session joined");
     };
 
@@ -112,7 +114,6 @@
 
     ChromecastComponent.prototype.onSessionSuccess = function(session) {
       var image, key, loadRequest, mediaInfo, ref, value;
-      // TODO stop the control-bar disappearing in 'not-hover'
       videojs.log("Session initialized: " + session.sessionId);
       this.apiSession = session;
       this.addClass("connected");
@@ -154,8 +155,8 @@
     };
 
     ChromecastComponent.prototype.doNotHover = function() {
-      this.player_.removeClass('not-hover');
-    }
+      return this.player_.removeClass('not-hover');
+    };
 
     ChromecastComponent.prototype.onSessionUpdate = function(isAlive) {
       if (!this.apiMedia) {
@@ -278,7 +279,7 @@
       clearInterval(this.timer);
       this.casting = false;
       this.removeClass("connected");
-      if(this.player_.catalog && this.player_.catalog.load && this.player_.mediainfo && this.player_.mediainfo.id) {
+      if (this.player_.catalog && this.player_.catalog.load && this.player_.mediainfo && this.player_.mediainfo.id) {
         this.player_.catalog.load(this.player_.mediainfo);
       } else {
         this.player_.src(this.player_.options_["sources"]);
@@ -309,13 +310,15 @@
 
     return ChromecastComponent;
 
-  })(videojs.getComponent('Button'));
+  })(vjsButton);
 
-  var ChromecastTech = (function(superClass) {
+  Tech = videojs.getTech('Tech');
+
+  ChromecastTech = (function(superClass) {
     extend(ChromecastTech, superClass);
 
     ChromecastTech.isSupported = function() {
-      return this.player.chromecastComponent.apiInitialized;
+      return this.player_.chromecastComponent.apiInitialized;
     };
 
     ChromecastTech.canPlaySource = function(source) {
@@ -328,7 +331,6 @@
       this.featuresFullscreenResize = false;
       this.featuresProgressEvents = true;
       this.receiver = options.source.receiver;
-      this.player = videojs(options.playerId);
       ChromecastTech.__super__.constructor.call(this, options);
       this.triggerReady();
     }
@@ -336,10 +338,10 @@
     ChromecastTech.prototype.createEl = function() {
       var element;
       element = document.createElement("div");
-      element.id = this.player.id_ + "_chromecast_api";
-      element.className = "vjs-tech vjs-tech-chromecast";
-      element.innerHTML = "<div class=\"casting-image\" style=\"background-image: url('" + ( this.player.options_.poster || this.player.poster_ ) + "')\"></div>\n<div class=\"casting-overlay\">\n  <div class=\"casting-information\">\n    <div class=\"casting-icon\">&#58880</div>\n    <div class=\"casting-description\"><small>" + (this.localize("CASTING TO")) + "</small><br>" + this.receiver + "</div>\n  </div>\n</div>";
-      element.player = this.player;
+      element.id = this.player_.id_ + "_chromecast_api";
+      element.className = "videojs-tech videojs-tech-chromecast";
+      element.innerHTML = "<div class=\"casting-image\" style=\"background-image: url('" + (this.player_.options_.poster || this.player_.poster_) + "')\"></div>\n<div class=\"casting-overlay\">\n  <div class=\"casting-information\">\n    <div class=\"casting-icon\">&#58880</div>\n    <div class=\"casting-description\"><small>" + (this.localize("CASTING TO")) + "</small><br>" + this.receiver + "</div>\n  </div>\n</div>";
+      element.player = this.player_;
       return element;
     };
 
@@ -349,62 +351,60 @@
      */
 
     ChromecastTech.prototype.play = function() {
-      this.player.chromecastComponent.play();
-      this.trigger('play');
+      this.player_.chromecastComponent.play();
+      return this.trigger('play');
     };
 
     ChromecastTech.prototype.pause = function() {
-      this.player.chromecastComponent.pause();
-      this.trigger('pause');
+      this.player_.chromecastComponent.pause();
+      return this.trigger('pause');
     };
 
     ChromecastTech.prototype.paused = function() {
-      return this.player.chromecastComponent.paused;
+      return this.player_.chromecastComponent.paused;
     };
 
     ChromecastTech.prototype.currentTime = function() {
-      return this.player.chromecastComponent.currentMediaTime;
+      return this.player_.chromecastComponent.currentMediaTime;
     };
 
     ChromecastTech.prototype.setCurrentTime = function(seconds) {
-      return this.player.chromecastComponent.seekMedia(seconds);
+      return this.player_.chromecastComponent.seekMedia(seconds);
     };
 
     ChromecastTech.prototype.currentSrc = function(src) {
-      if(typeof(src)!='undefined'){
-        videojs.log("TODO Should change source to: " + src)
+      if (typeof src !== 'undefined') {
+        videojs.log("TODO Should change source to: " + src);
       }
-      return this.player.chromecastComponent.currentSrc_;
-    }
-
-    ChromecastTech.prototype.duration = function() {
-      // MAYBE TODO theoretically the player wants us to return a duration, but it doesn't seem to matter
-      videojs.log("ChromecastTech got duration call??");
+      return this.player_.chromecastComponent.currentSrc_;
     };
 
-    ChromecastTech.prototype.ended = function(){
-      // this fires at strange times, but can just be ignored
-      return true;
-    }
+    ChromecastTech.prototype.duration = function() {
+      return videojs.log("ChromecastTech got duration call??");
+    };
 
-    ChromecastTech.prototype.controls = function() {
+    ChromecastTech.prototype.ended = function() {
+      return true;
+    };
+
+    ChromecastTech.prototype.conrols = function() {
       return false;
     };
 
     ChromecastTech.prototype.volume = function() {
-      return this.player.chromecastComponent.currentVolume;
+      return this.player_.chromecastComponent.currentVolume;
     };
 
     ChromecastTech.prototype.setVolume = function(volume) {
-      return this.player.chromecastComponent.setMediaVolume(volume, false);
+      return this.player_.chromecastComponent.setMediaVolume(volume, false);
     };
 
     ChromecastTech.prototype.muted = function() {
-      return this.player.chromecastComponent.muted;
+      return this.player_.chromecastComponent.muted;
     };
 
     ChromecastTech.prototype.setMuted = function(muted) {
-      return this.player.chromecastComponent.setMediaVolume(this.player.chromecastComponent.currentVolume, muted);
+      return this.player_.chromecastComponent.setMediaVolume(this.player_.chromecastComponent.currentVolume, muted);
     };
 
     ChromecastTech.prototype.supportsFullScreen = function() {
@@ -413,8 +413,8 @@
 
     return ChromecastTech;
 
-  })(videojs.getTech('Tech'));
+  })(Tech);
 
-  videojs.registerTech('ChromecastTech', ChromecastTech);
+  videojs.registerTech("ChromecastTech", ChromecastTech);
 
 }).call(this);
