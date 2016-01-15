@@ -1,4 +1,6 @@
-class vjs.ChromecastComponent extends vjs.Button
+vjsButton = videojs.getComponent "Button"
+
+class ChromecastComponent extends vjsButton
   buttonText: "Chromecast"
   inactivityTimeout: 2000
 
@@ -24,44 +26,53 @@ class vjs.ChromecastComponent extends vjs.Button
 
   initializeApi: ->
     # Check if the browser is Google Chrome
-    return unless vjs.IS_CHROME
+    return unless videojs.browser.IS_CHROME
 
     # If the Cast APIs arent available yet, retry in 1000ms
     if not chrome.cast or not chrome.cast.isAvailable
-      vjs.log "Cast APIs not available. Retrying..."
-      setTimeout @initializeApi.bind(@), 1000
+      videojs.log "Cast APIs not available. Waiting..."
+      window['__onGCastApiAvailable'] = @deferedInitialize.bind(@)
       return
 
-    vjs.log "Cast APIs are available"
+    videojs.log "Cast APIs are available"
 
-    appId = @settings.appId or chrome.cast.media.DEFAULT_MEDIA_RECEIVER_APP_ID
+    appId = @settings.hasOwnProperty('appId') and @settings.appId or chrome.cast.media.DEFAULT_MEDIA_RECEIVER_APP_ID
     sessionRequest = new chrome.cast.SessionRequest(appId)
 
     apiConfig = new chrome.cast.ApiConfig(sessionRequest, @sessionJoinedListener, @receiverListener.bind(this))
 
     chrome.cast.initialize apiConfig, @onInitSuccess.bind(this), @castError
 
+  deferedInitialize: (loaded, errorInfo) ->
+    if loaded
+      @initializeApi
+    else
+      videojs.log "Error initialising API"
+      videojs.log errorInfo
+
   sessionJoinedListener: (session) ->
+    # TODO/TK actually do something about the session we joined (load the tech maybe?)
     console.log "Session joined"
 
   receiverListener: (availability) ->
-    @show() if availability is "available"
+    @show() if availability is chrome.cast.ReceiverAvailability.AVAILABLE
 
   onInitSuccess: ->
     @apiInitialized = true
 
   castError: (castError) ->
-    vjs.log "Cast Error: #{JSON.stringify(castError)}"
+    videojs.log "Cast Error: #{JSON.stringify(castError)}"
 
   doLaunch: ->
-    vjs.log "Cast video: #{@player_.currentSrc()}"
+    videojs.log "Cast video: #{@player_.currentSrc()}"
     if @apiInitialized
       chrome.cast.requestSession @onSessionSuccess.bind(this), @castError
     else
-      vjs.log "Session not initialized"
+      videojs.log "Session not initialized"
 
   onSessionSuccess: (session) ->
-    vjs.log "Session initialized: #{session.sessionId}"
+    # TODO stop the control-bar disappearing in 'not-hover'
+    videojs.log "Session initialized: #{session.sessionId}"
 
     @apiSession = session
     @addClass "connected"
@@ -91,8 +102,14 @@ class vjs.ChromecastComponent extends vjs.Button
 
     @startProgressTimer @incrementMediaTime.bind(this)
 
-    @player_.loadTech "ChromecastTech",
-      receiver: @apiSession.receiver.friendlyName
+    @oldTech_ = @player_.techName_
+    @oldSrc_ = @player_.currentSrc()
+
+    @player_.loadTech_ "ChromecastTech", {
+      currentSrc: @player_.currentSrc(),
+      receiver: @apiSession.receiver.friendlyName,
+      chromecastComponent: @
+    }
 
     @casting = true
     @paused = @player_.paused()
@@ -100,7 +117,12 @@ class vjs.ChromecastComponent extends vjs.Button
     # Always show the controlbar
     @inactivityTimeout = @player_.options_.inactivityTimeout
     @player_.options_.inactivityTimeout = 0
+    @player_.removeClass 'not-hover'
+    @player_.on 'mouseout', @doNotHover.bind(@)
     @player_.userActive true
+
+  doNotHover: ->
+    @player_.removeClass 'not-hover'
 
   onSessionUpdate: (isAlive) ->
     return unless @apiMedia
@@ -136,14 +158,14 @@ class vjs.ChromecastComponent extends vjs.Button
   play: ->
     return unless @apiMedia
     if @paused
-      @apiMedia.play null, @mediaCommandSuccessCallback.bind(this, "Playing: " + @apiMedia.sessionId), @onError
+      @apiMedia.play null, @mediaCommandSuccessCallback.bind(this, "Playing: " + @apiMedia.sessionId), @handleTechError
       @paused = false
 
   pause: ->
     return unless @apiMedia
 
     unless @paused
-      @apiMedia.pause null, @mediaCommandSuccessCallback.bind(this, "Paused: " + @apiMedia.sessionId), @onError
+      @apiMedia.pause null, @mediaCommandSuccessCallback.bind(this, "Paused: " + @apiMedia.sessionId), @handleTechError
       @paused = true
 
   seekMedia: (position) ->
@@ -152,7 +174,7 @@ class vjs.ChromecastComponent extends vjs.Button
     # Make sure playback resumes. videoWasPlaying does not survive minification.
     request.resumeState = chrome.cast.media.ResumeState.PLAYBACK_START if @player_.controlBar.progressControl.seekBar.videoWasPlaying
 
-    @apiMedia.seek request, @onSeekSuccess.bind(this, position), @onError
+    @apiMedia.seek request, @onSeekSuccess.bind(this, position), @handleTechError
 
   onSeekSuccess: (position) ->
     @currentMediaTime = position
@@ -170,7 +192,7 @@ class vjs.ChromecastComponent extends vjs.Button
     request = new chrome.cast.media.VolumeRequest()
     request.volume = volume
 
-    @apiMedia.setVolume request, @mediaCommandSuccessCallback.bind(this, "Volume changed"), @onError
+    @apiMedia.setVolume request, @mediaCommandSuccessCallback.bind(this, "Volume changed"), @handleTechError
     @player_.trigger "volumechange"
 
   incrementMediaTime: ->
@@ -184,14 +206,14 @@ class vjs.ChromecastComponent extends vjs.Button
       clearInterval @timer
 
   mediaCommandSuccessCallback: (information, event) ->
-    vjs.log information
+    videojs.log information
 
-  onError: ->
-    vjs.log "error"
+  handleTechError: ->
+    videojs.log "error"
 
   # Stops the casting on the Chromecast
   stopCasting: ->
-    @apiSession.stop @onStopAppSuccess.bind(this), @onError
+    @apiSession.stop @onStopAppSuccess.bind(this), @handleTechError
 
   # Callback when the app has been successfully stopped
   onStopAppSuccess: ->
@@ -199,16 +221,18 @@ class vjs.ChromecastComponent extends vjs.Button
     @casting = false
     @removeClass "connected"
 
-    @player_.src @player_.options_["sources"]
+    @player_.loadTech_(@oldTech_)
+
+    if @player_.catalog and @player_.catalog.load and @player_.mediainfo and @player_.mediainfo.id
+      @player_.catalog.load @player_.mediainfo
+    else
+      @player_.src @oldSrc_
 
     # Resume playback if not paused when casting is stopped
     unless @paused
       @player_.one 'seeked', ->
         @player_.play()
     @player_.currentTime(@currentMediaTime)
-
-    # Hide the default HTML5 player controls.
-    @player_.tech.setControls(false)
 
     # Enable user activity timeout
     @player_.options_.inactivityTimeout = @inactivityTimeout
@@ -219,6 +243,8 @@ class vjs.ChromecastComponent extends vjs.Button
   buildCSSClass: ->
     super + "vjs-chromecast-button"
 
-  onClick: ->
+  handleClick: ->
     super
     if @casting then @stopCasting() else @doLaunch()
+
+videojs.registerComponent "ChromecastComponent", ChromecastComponent

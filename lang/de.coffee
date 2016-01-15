@@ -1,2 +1,2 @@
-vjs.addLanguage "de",
+videojs.addLanguage "de",
   "CASTING TO": "WIEDERGABE AUF"
