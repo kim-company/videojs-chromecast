@@ -1,4 +1,4 @@
-/*! videojs-chromecast - v1.1.1 - 2016-01-15
+/*! videojs-chromecast - v1.1.1 - 2016-01-27
 * https://github.com/kim-company/videojs-chromecast
 * Copyright (c) 2016 KIM Keep In Mind GmbH, srl; Licensed MIT */
 
@@ -79,7 +79,7 @@
 
     ChromecastComponent.prototype.deferedInitialize = function(loaded, errorInfo) {
       if (loaded) {
-        return this.initializeApi;
+        return this.initializeApi();
       } else {
         videojs.log("Error initialising API");
         return videojs.log(errorInfo);

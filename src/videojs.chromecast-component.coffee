@@ -45,7 +45,7 @@ class ChromecastComponent extends vjsButton
 
   deferedInitialize: (loaded, errorInfo) ->
     if loaded
-      @initializeApi
+      @initializeApi()
     else
       videojs.log "Error initialising API"
       videojs.log errorInfo
