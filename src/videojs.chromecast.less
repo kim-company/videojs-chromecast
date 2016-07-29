@@ -7,7 +7,6 @@
 
 // ChromecastComponent
 .vjs-chromecast-button {
-  float: right !important;
   cursor: pointer;
   width: 3em !important;
 
@@ -48,13 +47,17 @@
       color: #FFF;
 
       .casting-icon {
-        font-family: "chromecast" !important;
         font-size: 44px;
         line-height: 50px;
         margin-right: 10px;
         float: left;
         width: 58px;
         height: 50px;
+
+        &:before {
+          content: "\e600";
+          font-family: "chromecast" !important;
+        }
       }
 
       .casting-description {

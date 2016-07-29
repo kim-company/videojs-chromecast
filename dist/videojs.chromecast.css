@@ -1,6 +1,6 @@
-/*! videojs-chromecast - v1.1.1 - 2015-04-15
+/*! videojs-chromecast - v1.1.1 - 2016-01-27
 * https://github.com/kim-company/videojs-chromecast
-* Copyright (c) 2015 KIM Keep In Mind GmbH, srl; Licensed MIT */
+* Copyright (c) 2016 KIM Keep In Mind GmbH, srl; Licensed MIT */
 
 @font-face {
   font-family: "chromecast";
@@ -9,7 +9,6 @@
   font-style: normal;
 }
 .vjs-chromecast-button {
-  float: right !important;
   cursor: pointer;
   width: 3em !important;
 }
@@ -50,13 +49,16 @@
   color: #FFF;
 }
 .vjs-tech-chromecast .casting-overlay .casting-information .casting-icon {
-  font-family: "chromecast" !important;
   font-size: 44px;
   line-height: 50px;
   margin-right: 10px;
   float: left;
   width: 58px;
   height: 50px;
+}
+.vjs-tech-chromecast .casting-overlay .casting-information .casting-icon:before {
+  content: "\e600";
+  font-family: "chromecast" !important;
 }
 .vjs-tech-chromecast .casting-overlay .casting-information .casting-description {
   height: 50px;
