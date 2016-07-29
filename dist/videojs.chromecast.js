@@ -431,8 +431,7 @@
                 });
             }
             
-	            // on app stop the ad framework search to see if any ads can be served, as we do not do midrolls we just disable the serving of ads. 
-	            this.player_.ads.contentSrc = this.player_.currentSrc();
+	        
                 this.player_.currentTime(time);
                 this.player_.play();
        
