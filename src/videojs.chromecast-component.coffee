@@ -221,4 +221,9 @@ class vjs.ChromecastComponent extends vjs.Button
 
   onClick: ->
     super
-    if @casting then @stopCasting() else @doLaunch()
+    if @casting
+      @player_.trigger "chromecastStop"
+      @stopCasting()
+    else
+      @player_.trigger "chromecastStart"
+      @doLaunch()

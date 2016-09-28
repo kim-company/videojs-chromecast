@@ -1,6 +1,6 @@
-/*! videojs-chromecast - v1.1.1 - 2015-04-15
+/*! videojs-chromecast - v1.1.1 - 2016-09-28
 * https://github.com/kim-company/videojs-chromecast
-* Copyright (c) 2015 KIM Keep In Mind GmbH, srl; Licensed MIT */
+* Copyright (c) 2016 KIM Keep In Mind GmbH, srl; Licensed MIT */
 
 (function() {
   var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
@@ -280,8 +280,10 @@
     ChromecastComponent.prototype.onClick = function() {
       ChromecastComponent.__super__.onClick.apply(this, arguments);
       if (this.casting) {
+        this.player_.trigger("chromecastStop");
         return this.stopCasting();
       } else {
+        this.player_.trigger("chromecastStart");
         return this.doLaunch();
       }
     };
